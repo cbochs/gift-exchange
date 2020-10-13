@@ -1,107 +1,145 @@
-import time
+import argparse
+import csv
+from collections import OrderedDict
+from pprint import pprint
 from random import shuffle
-
-# OUR RELATIONSHIPS (tuples) :)
-relationships = {
-    'siblings': [],
-    'couples': []
-}
-
-# ORDERED NAMES FOR EASE OF COPY-PASTA (OUTPUT)
-parent_names_ordered = []
-kid_names_ordered = []
-
-# A HISTORY OF EACH PERSON'S PARNTER UP TO A CERTAIN DATE
-# Note: This is simply a starting point. These tables will be updated
-#       as each year is determined (dict of names containing list of giftees)
-parents = {}
-
-kids = {}
+from time import sleep
 
 
-# CHECK FOR RELATIONSHIP STATUS
-def in_relationship(p1, p2):
-    for siblings in relationships['siblings']:
-        if p1 in siblings and p2 in siblings:
-            return True
-    for couples in relationships['couples']:
-        if p1 in couples and p2 in couples:
-            return True
+def read_in_relationships(relationship_file):
+    relationships = []
+    with open(relationship_file, 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        relationships = [
+            tuple(map(lambda x: x.strip() , row))
+            for row in reader]
+    return relationships
 
 
-# CHECK IF PERSON 1 AND PERSON 2 CAN BE PAIRED
-# a. Is there a relationship between them? (sibling or couple)
-# b. Have they been chosen recently?
-# c. Are they the same person?
-def valid_partner(p1, p2, history):
-    return not in_relationship(p1, p2) and p2 not in history[p1] and p1 is not p2
+def read_in_history(history_file):
+    history = {}
+    with open(history_file, 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        headers = list(map(lambda x: x.strip(), next(reader)))
+        history = {name: [] for name in headers}
+        for row in reader:
+            for i, name in enumerate(headers):
+                if row[i].strip() == 'N/A':
+                    row[i] = None
+                else:
+                    row[i] = row[i].strip()
+                history[name].append(row[i])
+
+    return headers, history
 
 
-# RECURSIVELY DETERMINE A SOLUTION TO THE GIFT EXCHANGE
-def find_solution(i, names, names_left, solution, history):
-    if i == len(names):
+# GENERATE GIFT EXCHANGE SOLUTION: ENTRY POINT
+def generate_solution(names, relationships, history):
+    counter    = 0
+    gifters    = list(names)
+    recipients = list(names)
+
+    solution = OrderedDict()
+    for name in names:
+        solution[name] = None
+
+    while True:
+        counter += 1
+        shuffle(recipients)
+        found = _generate_solution(
+            solution, gifters, recipients,
+            relationships, history)
+        if found:
+            break
+        if counter > 1000:
+            raise RuntimeError('Could not determine solution')
+
+    return solution
+
+
+# GENERATE GIFT EXCHANGE SOLUTION: RECURSIVE STEP
+def _generate_solution(solution, gifters_remaining, recipients_remaining,
+                       relationships, history):
+    if len(gifters_remaining) == 0:
         return True
 
-    person = names[i]
-    for partner in names_left:
-        if valid_partner(person, partner, history):
-            solution[person] = partner
-            new_names_left = list(names_left)
-            new_names_left.remove(partner)
+    gifters_remaining = list(gifters_remaining)
+    gifter = gifters_remaining.pop()
+    for recipient in recipients_remaining:
+        is_valid_recipient = valid_recipient(
+            gifter, recipient, relationships, history, solution)
 
-            if find_solution(i+1, names, new_names_left, solution, history):
+        if is_valid_recipient:
+            solution[gifter] = recipient
+            recipients_remaining = list(recipients_remaining)
+            recipients_remaining.remove(recipient)
+
+            solution_found = _generate_solution(
+                solution, gifters_remaining, recipients_remaining,
+                relationships, history)
+
+            if solution_found:
                 return True
             else:
-                solution[person] = None
-    
+                solution[gifter] = None
+
     return False
 
 
-# UPDATE GIFT EXCHANGE HISTORY
-def update_history(history, solution, lookback_length=3):
-    for person, previous_partners in history.items():
-        if len(previous_partners) >= lookback_length:
-            previous_partners.pop(0)
-        previous_partners.append(solution[person])
+# CHECK IF PERSON 1 CAN GIVE PERSON 2 A GIFT
+# a. Are they in a relationship? (sibling or couple)
+# b. Has person 1 had person 2 as a partner recently?
+# c. Are they the same person?
+# d. Are they gifting each other?
+def valid_recipient(gifter, recipient, relationships, history, solution):
+    return not in_relationship(gifter, recipient, relationships) \
+           and not in_history(gifter, recipient, history) \
+           and not solution[recipient] == gifter \
+           and gifter is not recipient
 
 
-# DO THE GIFT EXCHANGE
-def gift_exchange(names_ordered, history, output_location, year_start=2019, year_end=2030, time_delay=0.5):
-    solution = {n: None for n in names_ordered}
-    
-    names_random = list(names_ordered)
-    shuffle(names_random)
+def in_relationship(p1, p2, relationships):
+    for r in relationships:
+        if p1 in r and p2 in r:
+            return True
+    return False
 
-    year = year_start
-    with open(output_location, 'w') as ofile:
-        while find_solution(0, names_ordered, names_random, solution, history):
-            # OUTPUT SOLUTION TO CONSOLE
-            print(f'YEAR: {year}')
-            for name in names_ordered:
-                print(f'{name:20}: {solution[name]}')
-            print()
-            
-            # OUTPUT SOLUTION TO FILE
-            ofile.write(str(year) + '\n')
-            for name in names_ordered:
-                ofile.write(f'{name},{solution[name]}\n')
-            
-            # UPDATE HISTORY
-            update_history(history, solution)
 
-            # UPDATE/CHECK YEAR
-            year += 1
-            if year > year_end:
-                break
+def in_history(gifter, recipient, history, max_lookback=3):
+    return recipient in history[gifter][-max_lookback:]
 
-            # RESET SOLUTION AND SHUFFLE NAMES FOR NEXT ITERATION
-            solution = {n: None for n in names_ordered}
-            shuffle(names_random)
 
-            # JUST FOR FUN, ADD A SMALL WAIT TIME
-            time.sleep(time_delay)
+def print_solution(solution, year):
+    pprint(solution) # okay, could print better than this...
 
-# gift_exchange(parent_names_ordered, parents, 'gift_exchange_parents.csv', year_end=2020)
-gift_exchange(kid_names_ordered, kids, 'gift_exchange_kids.csv', year_end=2020)
 
-pass
+def save_solution(solution, year, history_file):
+    with open(history_file, 'a') as f:
+        f.write("\n")
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow([year] + list(solution.values()))
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-r', '--relationships', action='store', required=True)
+parser.add_argument('-p', '--history',       action='store', required=True)
+parser.add_argument('-n', '--years',         action='store', type=int, default=1)
+parser.add_argument('-a', '--append',        action='store_true')
+args = parser.parse_args()
+
+relationships = read_in_relationships(args.relationships)
+
+headers, history = read_in_history(args.history)
+
+names = list(headers)
+names.remove('Year')
+
+year = int(history['Year'][-1]) + 1
+
+for _ in range(args.years):
+    solution = generate_solution(names, relationships, history)
+    print_solution(solution, year)
+    if args.append:
+        save_solution(solution, year, args.history)
+
+print('Done.')
