@@ -2,12 +2,12 @@
 
 ## Status
 
-- [ ] `cmd/giftexchange/main.go` — `run(args, stdout, stderr) int` entry point
-- [ ] `solve` subcommand — reads input JSON, calls library, formats output
-- [ ] `validate` subcommand — validates input without solving
-- [ ] `analyze` subcommand — prints graph statistics
-- [ ] `cmd/giftexchange/main_test.go` — all CLI integration tests passing
-- [ ] Round-trip verified: `solve --json` output can be re-used as input
+- [x] `cmd/giftexchange/main.go` — `run(args, stdin, stdout, stderr) int` entry point
+- [x] `solve` subcommand — reads input JSON, calls library, formats output
+- [x] `validate` subcommand — validates input without solving
+- [x] `analyze` subcommand — prints graph statistics
+- [x] `cmd/giftexchange/main_test.go` — all CLI integration tests passing
+- [x] Round-trip verified: `solve --json` output can be re-used as input
 
 ## Goal
 

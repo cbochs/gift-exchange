@@ -31,9 +31,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 3 — CLI (not yet started)
-**Last session**: Completed Phase 2. Implemented full Go library (`lib/`): types, graph, score, solver. All tests pass; `go vet` and `staticcheck` clean. One plan correction: `wouldClosePrematureCycle` uses `length < minLen` not `|| assigned < total` (the `||` form blocks multi-cycle solutions).
-**Next action**: Read `plans/phase3-cli.md` and begin Phase 3.
+**Active phase**: Phase 4 — Web Backend (not yet started)
+**Last session**: Completed Phase 3. CLI has `solve`, `validate`, `analyze` subcommands. Added `Validate` and `Analyze` exported functions + JSON tags to lib. Round-trip verified. All tests pass; `go vet` and `staticcheck` clean.
+**Next action**: Read `plans/phase4-web-backend.md` and begin Phase 4.
 
 ---
 

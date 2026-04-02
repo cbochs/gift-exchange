@@ -4,7 +4,7 @@
 
 - [x] **Phase 1 — Problem Exploration**: Complete. Algorithm chosen (Hamiltonian DFS + N/M progression). All design questions resolved. Experiments in `experiments/`.
 - [x] **Phase 2 — Core Library**: Complete. All tests pass; `go vet` and `staticcheck` clean.
-- [ ] **Phase 3 — CLI**: Not started. Depends on Phase 2.
+- [x] **Phase 3 — CLI**: Complete. `solve`, `validate`, `analyze` subcommands; round-trip verified.
 - [ ] **Phase 4 — Web Backend**: Not started. Depends on Phase 2.
 - [ ] **Phase 5 — Web Frontend**: Not started. Depends on Phase 4.
 
