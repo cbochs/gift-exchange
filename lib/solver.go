@@ -57,6 +57,14 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 	}
 }
 
+// Validate checks the problem for structural errors and Hall's condition.
+// Returns nil if the problem is well-formed and potentially solvable.
+// This is a thin exported wrapper for callers (e.g. the CLI validate subcommand)
+// that need to check feasibility without running the full solver.
+func Validate(p Problem) error {
+	return validate(p)
+}
+
 // validate checks structural validity of the problem and Hall's condition.
 // Returns ErrInfeasible if any participant has no valid recipients or gifters.
 func validate(p Problem) error {
