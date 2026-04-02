@@ -43,25 +43,37 @@ Do not start any implementation work before reading the relevant phase plan.
 gift-exchange/
 ├── CLAUDE.md                  ← this file
 ├── README.md                  ← user-facing readme (brief)
+├── go.mod                     ← module: github.com/cbochs/gift-exchange
 ├── giftexchange.py            ← original Python implementation (reference only)
 ├── participants.json          ← sample data: 22 participants, two groups
 ├── relationships.json         ← sample data: relationship blocks
 ├── history.json               ← sample data: 10 years of historical pairings
+├── lib/                       ← COMPLETE — core solver library (stdlib only)
+│   ├── types.go               ← public types + ErrInfeasible
+│   ├── graph.go               ← buildGraph, isEdge, shuffled
+│   ├── score.go               ← decomposeCycles, canonicalize, scoreOf, Score.Better
+│   ├── analyze.go             ← Analyze (exported) — graph stats + Hamiltonian check
+│   ├── solver.go              ← Validate (exported), hamiltonianDFS, constrainedBacktrack, Solve
+│   └── solver_test.go         ← unit + integration + property tests (all passing)
+├── cmd/
+│   └── giftexchange/          ← COMPLETE — CLI thin wrapper around lib
+│       ├── main.go            ← run(args, stdin, stdout, stderr); solve/validate/analyze subcommands
+│       └── main_test.go       ← integration tests (all passing)
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
-│   ├── phase2-library.md      ← ready to implement (TDD)
-│   ├── phase3-cli.md          ← planned
-│   ├── phase4-web-backend.md  ← planned
+│   ├── phase2-library.md      ← COMPLETE
+│   ├── phase3-cli.md          ← COMPLETE
+│   ├── phase4-web-backend.md  ← next
 │   └── phase5-web-frontend.md ← planned
 └── experiments/
-    ├── go.mod
-    ├── merge_completeness/main.go   ← proves greedy 2-opt merge is incomplete
-    └── shuffle_diversity/main.go    ← compares global vs per-node shuffle strategies
+    ├── go.mod                 ← imports root module via replace directive
+    ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete
+    ├── shuffle_diversity/     ← compares global vs per-node shuffle strategies
+    └── cousins_2026/          ← real-data run: 15 cousins, 2020–2025 history blocks
 ```
 
-**No Go library, CLI, server, or frontend code exists yet.** The Python file is
-reference only — do not modify it.
+**No server or frontend code exists yet.** The Python file is reference only — do not modify it.
 
 ---
 
@@ -97,26 +109,3 @@ These are settled. Do not re-open them without flagging to the user.
    logical unit of work (a new file, a passing test suite, a bug fix) warrants its
    own commit.
 
----
-
-## Phase 2 Starting Checklist
-
-When beginning Phase 2, complete in this order:
-
-1. `go mod init github.com/[user]/gift-exchange` in repo root
-2. Write `lib/types.go` (types + `Solve` stub that returns `ErrInfeasible`)
-3. Write `lib/score.go` (`decomposeCycles`, `canonicalize`, `scoreOf`, `Score.Better`)
-4. Write `lib/graph.go` (`buildGraph`, `isEdge`, `shuffled`)
-5. Write `lib/solver_test.go` (all tests — they should fail at this point)
-6. Write `lib/solver.go` until all tests pass
-7. Run `go vet ./...` and `staticcheck ./...` — zero warnings
-8. Verify `TestSolve_MergeCounterexample` passes (the 6-node graph from experiments)
-
-The counterexample graph (from `experiments/merge_completeness/main.go`):
-
-```
-adj = [[1,5], [0,5], [3,0,4], [2,0,1], [5,3], [4]]
-Only one Hamiltonian cycle: 0→1→5→4→3→2→0
-```
-
-The solver must find it via Hamiltonian DFS, not via cycle-merge.
