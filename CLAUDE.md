@@ -31,9 +31,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 2 — Core Library (not yet started)
-**Last session**: Completed Phase 1. Ran two experiments, made key algorithm decisions.
-**Next action**: Initialize Go module and begin Phase 2 TDD cycle.
+**Active phase**: Phase 3 — CLI (not yet started)
+**Last session**: Completed Phase 2. Implemented full Go library (`lib/`): types, graph, score, solver. All tests pass; `go vet` and `staticcheck` clean. One plan correction: `wouldClosePrematureCycle` uses `length < minLen` not `|| assigned < total` (the `||` form blocks multi-cycle solutions).
+**Next action**: Read `plans/phase3-cli.md` and begin Phase 3.
 
 ---
 

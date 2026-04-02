@@ -2,14 +2,14 @@
 
 ## Status
 
-- [ ] Go module initialized (`go mod init` in repo root)
-- [ ] `lib/types.go` — `Participant`, `Block`, `Problem`, `Options`, `Assignment`, `Cycle`, `Score`, `Solution`, `ErrInfeasible`
-- [ ] `lib/score.go` — `decomposeCycles`, `canonicalize`, `scoreOf`, `Score.Better`, `sortByScore`
-- [ ] `lib/graph.go` — `buildGraph`, `graph.isEdge`, `shuffled`
-- [ ] `lib/solver_test.go` — all tests written (TDD: written before implementation)
-- [ ] `lib/solver.go` — `validate`, `hamiltonianDFS`, `wouldClosePrematureCycle`, `constrainedBacktrack`, `collectSolutions`, `Solve`
-- [ ] All tests passing (`go test ./lib/...`)
-- [ ] `go vet ./...` and `staticcheck ./...` clean
+- [x] Go module initialized (`go mod init` in repo root)
+- [x] `lib/types.go` — `Participant`, `Block`, `Problem`, `Options`, `Assignment`, `Cycle`, `Score`, `Solution`, `ErrInfeasible`
+- [x] `lib/score.go` — `decomposeCycles`, `canonicalize`, `scoreOf`, `Score.Better`, `sortByScore`
+- [x] `lib/graph.go` — `buildGraph`, `graph.isEdge`, `shuffled`
+- [x] `lib/solver_test.go` — all tests written (TDD: written before implementation)
+- [x] `lib/solver.go` — `validate`, `hamiltonianDFS`, `wouldClosePrematureCycle`, `constrainedBacktrack`, `collectSolutions`, `Solve`
+- [x] All tests passing (`go test ./lib/...`)
+- [x] `go vet ./...` and `staticcheck ./...` clean
 
 > **Algorithm note**: The solver design was updated after Phase 1 experiments. The
 > primary algorithm is **Hamiltonian DFS** (not backtracking + cycle-merge). See
@@ -402,7 +402,7 @@ func constrainedBacktrack(g *graph, rng *rand.Rand, minCycleLen int) ([]int, boo
             if usedRecipient[recipient] {
                 continue
             }
-            if wouldClosePrematureCycle(assign, gifter, recipient, minCycleLen, g.n) {
+            if wouldClosePrematureCycle(assign, gifter, recipient, minCycleLen) {
                 continue
             }
             assign[gifter] = recipient
@@ -422,13 +422,10 @@ func constrainedBacktrack(g *graph, rng *rand.Rand, minCycleLen int) ([]int, boo
     return nil, false
 }
 
-func wouldClosePrematureCycle(assign []int, gifter, recipient, minLen, total int) bool {
-    assigned := 1 // count the edge we're about to add
-    for _, v := range assign {
-        if v >= 0 {
-            assigned++
-        }
-    }
+// CORRECTED during implementation: the original used `length < minLen || assigned < total`
+// but || is wrong — it blocks all intermediate cycle closures, preventing multi-cycle
+// solutions. The `total` parameter is also unnecessary. The correct check is:
+func wouldClosePrematureCycle(assign []int, gifter, recipient, minLen int) bool {
     length := 1
     cur := recipient
     for {
@@ -438,7 +435,7 @@ func wouldClosePrematureCycle(assign []int, gifter, recipient, minLen, total int
         }
         length++
         if next == gifter {
-            return length < minLen || assigned < total
+            return length < minLen
         }
         cur = next
     }
