@@ -31,9 +31,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 4 — Web Backend (not yet started)
-**Last session**: Completed Phase 3. CLI has `solve`, `validate`, `analyze` subcommands. Added `Validate` and `Analyze` exported functions + JSON tags to lib. Round-trip verified. All tests pass; `go vet` and `staticcheck` clean.
-**Next action**: Read `plans/phase4-web-backend.md` and begin Phase 4.
+**Active phase**: Phase 5 — Web Frontend (`--static` verification deferred until frontend exists)
+**Last session**: Completed Phase 4. Created `server/api.go` (DTOs), `server/handlers.go` (handlers, CORS, DTO mapping), `server/main.go` (flag parsing, server setup), `server/handlers_test.go` (10 tests all passing). Smoke-tested with curl — 5 Hamiltonian solutions returned correctly. All tests pass across all packages.
+**Next action**: Read `plans/phase5-web-frontend.md` and begin Phase 5.
 
 ---
 
@@ -59,6 +59,11 @@ gift-exchange/
 │   └── giftexchange/          ← COMPLETE — CLI thin wrapper around lib
 │       ├── main.go            ← run(args, stdin, stdout, stderr); solve/validate/analyze subcommands
 │       └── main_test.go       ← integration tests (all passing)
+├── server/                    ← COMPLETE — HTTP server (package main)
+│   ├── api.go                 ← DTO types: SolveRequest, SolveResponse, ErrorResponse, etc.
+│   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
+│   ├── main.go                ← flag parsing (--addr, --cors-origin, --timeout, --static), newServer
+│   └── handlers_test.go       ← 10 handler tests using httptest (all passing)
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
@@ -73,7 +78,7 @@ gift-exchange/
     └── cousins_2026/          ← real-data run: 15 cousins, 2020–2025 history blocks
 ```
 
-**No server or frontend code exists yet.** The Python file is reference only — do not modify it.
+**No frontend code exists yet.** The Python file is reference only — do not modify it.
 
 ---
 

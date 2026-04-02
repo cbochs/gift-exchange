@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] `server/api.go` — all DTO types (`SolveRequest`, `SolveResponse`, `OptionsDTO`, etc.)
-- [ ] `server/handlers.go` — `solveHandler`, `healthHandler`, CORS middleware, `dtoToProblem`
-- [ ] `server/main.go` — flag parsing, `newServer`, `http.ListenAndServe`
-- [ ] `server/handlers_test.go` — all handler tests passing via `httptest`
-- [ ] Manual curl smoke test against running server
+- [x] `server/api.go` — all DTO types (`SolveRequest`, `SolveResponse`, `OptionsDTO`, etc.)
+- [x] `server/handlers.go` — `solveHandler`, `healthHandler`, CORS middleware, `dtoToProblem`
+- [x] `server/main.go` — flag parsing, `newServer`, `http.ListenAndServe`
+- [x] `server/handlers_test.go` — all handler tests passing via `httptest`
+- [x] Manual curl smoke test against running server
 - [ ] Single-binary deployment verified (`--static web/` serves frontend)
 
 ## Goal
