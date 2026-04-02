@@ -92,6 +92,10 @@ These are settled. Do not re-open them without flagging to the user.
    moving to the next phase.
 4. **Library first.** All algorithm logic lives in `lib/`. CLI and server are thin
    wrappers. Do not put business logic in handlers or CLI code.
+5. **Commit early and often.** Use conventional commit format (`feat:`, `fix:`,
+   `test:`, `chore:`, etc.) with a body that explains what changed and why. Each
+   logical unit of work (a new file, a passing test suite, a bug fix) warrants its
+   own commit.
 
 ---
 
