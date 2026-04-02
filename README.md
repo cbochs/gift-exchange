@@ -11,7 +11,26 @@ Multiple ranked solutions are returned so organizers can choose.
 | **Library**      | `lib/`              | Core solver — pure Go, no dependencies |
 | **CLI**          | `cmd/giftexchange/` | Command-line tool wrapping the library |
 | **Web backend**  | `server/`           | HTTP API server wrapping the library   |
-| **Web frontend** | _(planned)_         | Browser UI consuming the HTTP API      |
+| **Web frontend** | `web/`              | Browser UI consuming the HTTP API      |
+
+---
+
+## Web UI
+
+Run the server with the frontend:
+
+```bash
+go run ./server/ --static web/
+```
+
+Then open `http://localhost:8080` in a browser.
+
+- Add participants by name; IDs are auto-generated
+- Add optional blocks (directed: Alice → Bob prevents Alice giving to Bob)
+- Click **Generate** to solve and display ranked solutions
+- The graph shows valid pairings in grey and the selected solution in color — one color per cycle
+- Click solution tabs to switch between ranked results
+- **Download JSON** saves the full problem + solutions; **Import JSON** restores it (cached solutions are displayed immediately with no API call)
 
 ---
 

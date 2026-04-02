@@ -31,9 +31,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 5 — Web Frontend (`--static` verification deferred until frontend exists)
-**Last session**: Completed Phase 4. Created `server/api.go` (DTOs), `server/handlers.go` (handlers, CORS, DTO mapping), `server/main.go` (flag parsing, server setup), `server/handlers_test.go` (10 tests all passing). Smoke-tested with curl — 5 Hamiltonian solutions returned correctly. All tests pass across all packages.
-**Next action**: Read `plans/phase5-web-frontend.md` and begin Phase 5.
+**Active phase**: All phases complete.
+**Last session**: Completed Phase 5. Created `web/index.html`, `web/style.css`, `web/app.js`. D3 v7 force-directed graph with cycle-colored edges, arrow markers, bidirectional arc paths. Solution tabs, JSON import/export (cached solutions skip API call). Smoke-tested in browser; fixed SVG path bug (missing space in quadratic Bezier `Q` command).
+**Next action**: No planned phases remain. Potential improvements: mobile layout, accessibility, test coverage for JS utilities.
 
 ---
 
@@ -64,13 +64,17 @@ gift-exchange/
 │   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
 │   ├── main.go                ← flag parsing (--addr, --cors-origin, --timeout, --static), newServer
 │   └── handlers_test.go       ← 10 handler tests using httptest (all passing)
+├── web/                       ← COMPLETE
+│   ├── index.html             ← two-panel layout shell; app.js loaded as ES module
+│   ├── style.css              ← layout, form, graph, solution tab styling
+│   └── app.js                 ← state, D3 force graph, API client, import/export
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
 │   ├── phase2-library.md      ← COMPLETE
 │   ├── phase3-cli.md          ← COMPLETE
-│   ├── phase4-web-backend.md  ← next
-│   └── phase5-web-frontend.md ← planned
+│   ├── phase4-web-backend.md  ← COMPLETE
+│   └── phase5-web-frontend.md ← COMPLETE
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
     ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete
@@ -78,7 +82,7 @@ gift-exchange/
     └── cousins_2026/          ← real-data run: 15 cousins, 2020–2025 history blocks
 ```
 
-**No frontend code exists yet.** The Python file is reference only — do not modify it.
+**The Python file is reference only — do not modify it.**
 
 ---
 

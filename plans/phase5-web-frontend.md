@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] `web/index.html` — two-panel layout shell, D3 CDN script tag
-- [ ] `web/style.css` — layout, form, solution tab styling
-- [ ] `web/app.js` — state management, form rendering, API client, D3 graph, solution tabs, JSON import/export
-- [ ] End-to-end smoke test (all manual checklist items)
-- [ ] Verified: JSON export → re-import → identical result, no extra API call
+- [x] `web/index.html` — two-panel layout shell, D3 CDN script tag
+- [x] `web/style.css` — layout, form, solution tab styling
+- [x] `web/app.js` — state management, form rendering, API client, D3 graph, solution tabs, JSON import/export
+- [x] End-to-end smoke test (all manual checklist items)
+- [x] Verified: JSON export → re-import → identical result, no extra API call
 
 ## Goal
 

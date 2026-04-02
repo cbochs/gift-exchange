@@ -5,8 +5,8 @@
 - [x] **Phase 1 — Problem Exploration**: Complete. Algorithm chosen (Hamiltonian DFS + N/M progression). All design questions resolved. Experiments in `experiments/`.
 - [x] **Phase 2 — Core Library**: Complete. All tests pass; `go vet` and `staticcheck` clean.
 - [x] **Phase 3 — CLI**: Complete. `solve`, `validate`, `analyze` subcommands; round-trip verified.
-- [ ] **Phase 4 — Web Backend**: Not started. Depends on Phase 2.
-- [ ] **Phase 5 — Web Frontend**: Not started. Depends on Phase 4.
+- [x] **Phase 4 — Web Backend**: Complete. `POST /api/v1/solve`, `GET /api/v1/health`, CORS middleware, 10 handler tests passing.
+- [x] **Phase 5 — Web Frontend**: Complete. Vanilla JS/D3 two-panel UI; force-directed graph; solution tabs; JSON import/export.
 
 ---
 
