@@ -4,9 +4,9 @@
 
 - [ ] Move `web/` to `server/web/`; update README dev command
 - [ ] `server/static.go` — `go:embed` for self-contained binary
-- [ ] `server/main.go` — serve embedded assets when `--static` is not set
-- [ ] `deploy/Dockerfile` — multi-stage build
-- [ ] `deploy/helm/gift-exchange/` — Helm chart (Chart.yaml, values.yaml, templates/)
+- [ ] `server/main.go` — serve embedded assets when `--static` is not set; add `GIFT_EXCHANGE_*` env var fallbacks
+- [ ] `Dockerfile` — multi-stage build (project root)
+- [ ] `helm/gift-exchange/` — Helm chart (Chart.yaml, values.yaml, templates/)
 - [ ] Smoke test: Docker container serves frontend; `helm template` renders cleanly
 
 ## Goal
@@ -67,10 +67,10 @@ The `--static` flag default changes from `""` (no static serving) to `""` (serve
 
 ## 2. Dockerfile
 
-**Location:** `deploy/Dockerfile`. Always build from the project root:
+**Location:** `Dockerfile` (project root). Build from the project root:
 
 ```bash
-docker build -f deploy/Dockerfile -t gift-exchange:latest .
+docker build -t gift-exchange:latest .
 ```
 
 ### 2.1 Multi-Stage Build
@@ -102,7 +102,7 @@ ENTRYPOINT ["/gift-exchange"]
 | ------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Runtime base       | `gcr.io/distroless/static:nonroot` | No shell, minimal attack surface; `:nonroot` runs as uid 65532 without a USER instruction; no Debian version pin so it receives base updates |
 | CGO                | Disabled                           | Go stdlib + embed; no cgo needed; produces a true static binary                                                                              |
-| No CMD             | Intentional                        | All configuration is passed as `args:` in the k8s Deployment spec                                                                            |
+| No CMD             | Intentional                        | All configuration is passed as `GIFT_EXCHANGE_*` env vars in the k8s Deployment spec                                                        |
 | `-ldflags="-s -w"` | Yes                                | Strips DWARF debug info and Go symbol table; ~30% smaller binary                                                                             |
 
 **`.dockerignore`** (at project root):
@@ -121,23 +121,23 @@ history.json
 
 ## 3. Helm Chart
 
-**Location:** `deploy/helm/gift-exchange/`
+**Location:** `helm/gift-exchange/` (project root)
 
 ```
-deploy/
-├── Dockerfile
-└── helm/
-    └── gift-exchange/
-        ├── Chart.yaml
-        ├── values.yaml
-        └── templates/
-            ├── _helpers.tpl
-            ├── deployment.yaml
-            ├── service.yaml
-            └── ingress.yaml
+helm/
+└── gift-exchange/
+    ├── Chart.yaml
+    ├── values.yaml
+    └── templates/
+        ├── _helpers.tpl
+        ├── deployment.yaml
+        ├── service.yaml
+        └── ingress.yaml
 ```
 
 ### 3.1 `Chart.yaml`
+
+`version` and `appVersion` are kept in sync — one app, one chart. `image.tag` defaults to `appVersion` (see §3.4).
 
 ```yaml
 apiVersion: v2
@@ -145,7 +145,7 @@ name: gift-exchange
 description: Optimized gift exchange assignment tool
 type: application
 version: 0.1.0
-appVersion: "1.0.0"
+appVersion: "0.1.0"
 ```
 
 ### 3.2 `values.yaml`
@@ -154,20 +154,20 @@ appVersion: "1.0.0"
 replicaCount: 1
 
 image:
-  repository: "" # REQUIRED — e.g. ghcr.io/cbochs/gift-exchange
-  tag: "" # REQUIRED — e.g. v1.0.0
+  repository: ghcr.io/cbochs/gift-exchange
+  tag: ""           # empty = use Chart.appVersion
   pullPolicy: IfNotPresent
 
 server:
-  corsOrigin: "" # REQUIRED — https://gift-exchange.example.com
+  corsOrigin: ""    # REQUIRED — https://gift-exchange.example.com
   timeout: "15s"
 
 ingress:
   enabled: true
-  className: "traefik" # or "nginx"
-  hostname: "" # REQUIRED — gift-exchange.example.com
+  className: "traefik"  # or "nginx"
+  hostname: ""      # REQUIRED — gift-exchange.example.com
   tls: true
-  annotations: {} # extra ingress annotations (e.g. cert-manager, auth middleware)
+  annotations: {}   # e.g. Traefik forward-auth, cert-manager
 
 resources:
   requests:
@@ -199,32 +199,35 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 ### 3.4 `templates/deployment.yaml`
 
+Configuration is passed via `env:` rather than `args:`. This aligns with standard k8s practice and makes values overridable via ConfigMaps without rewriting the Deployment spec. `image.tag` falls back to `Chart.appVersion` when left empty.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "gift-exchange.name" . } }
-  namespace: { { .Release.Namespace } }
-  labels: { { - include "gift-exchange.labels" . | nindent 4 } }
+  name: {{ include "gift-exchange.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "gift-exchange.labels" . | nindent 4 }}
 spec:
-  replicas: { { .Values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
-    matchLabels: { { - include "gift-exchange.selectorLabels" . | nindent 6 } }
+    matchLabels: {{- include "gift-exchange.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: { { - include "gift-exchange.selectorLabels" . | nindent 8 } }
+      labels: {{- include "gift-exchange.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: gift-exchange
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: { { .Values.image.pullPolicy } }
-          args:
-            - "--addr=:8080"
-            - "--cors-origin={{ .Values.server.corsOrigin }}"
-            - "--timeout={{ .Values.server.timeout }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: GIFT_EXCHANGE_CORS_ORIGIN
+              value: "{{ .Values.server.corsOrigin }}"
+            - name: GIFT_EXCHANGE_TIMEOUT
+              value: "{{ .Values.server.timeout }}"
           ports:
             - containerPort: 8080
-          resources: { { - toYaml .Values.resources | nindent 12 } }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /api/v1/health
@@ -249,11 +252,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: { { include "gift-exchange.name" . } }
-  namespace: { { .Release.Namespace } }
-  labels: { { - include "gift-exchange.labels" . | nindent 4 } }
+  name: {{ include "gift-exchange.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "gift-exchange.labels" . | nindent 4 }}
 spec:
-  selector: { { - include "gift-exchange.selectorLabels" . | nindent 4 } }
+  selector: {{- include "gift-exchange.selectorLabels" . | nindent 4 }}
   ports:
     - port: 80
       targetPort: 8080
@@ -261,6 +264,8 @@ spec:
 ```
 
 ### 3.6 `templates/ingress.yaml`
+
+Uses standard `networking.k8s.io/v1 Ingress` for portability across Traefik, nginx, and others. Traefik processes standard Ingress resources alongside its CRD routes — forward-auth middleware is attached via annotations (see §4).
 
 ```yaml
 {{- if .Values.ingress.enabled }}
@@ -294,14 +299,12 @@ spec:
 {{- end }}
 ```
 
-Auth middleware is configured via `ingress.annotations` in `values.yaml` (e.g. Traefik ForwardAuth or nginx auth annotations), keeping the template generic.
-
 ### 3.7 Publishing
 
 Package and push to an OCI registry (Helm 3.8+):
 
 ```bash
-helm package deploy/helm/gift-exchange
+helm package helm/gift-exchange
 helm push gift-exchange-0.1.0.tgz oci://ghcr.io/cbochs/charts
 ```
 
@@ -311,10 +314,11 @@ Install from the registry:
 helm install gift-exchange oci://ghcr.io/cbochs/charts/gift-exchange \
   --namespace gift-exchange --create-namespace \
   --set image.repository=ghcr.io/cbochs/gift-exchange \
-  --set image.tag=v1.0.0 \
   --set server.corsOrigin=https://gift-exchange.example.com \
   --set ingress.hostname=gift-exchange.example.com
 ```
+
+Note: `--set image.tag` is omitted — the chart uses `Chart.appVersion` by default.
 
 ---
 
@@ -322,12 +326,12 @@ helm install gift-exchange oci://ghcr.io/cbochs/charts/gift-exchange \
 
 The server has no authentication code. All requests reaching it are pre-authenticated by the proxy. No headers are read, no tokens are validated, no sessions exist.
 
-Configure the auth middleware via `ingress.annotations` in `values.yaml`. Example with Traefik ForwardAuth:
+Configure the auth middleware via `ingress.annotations` in `values.yaml`. Example with Traefik ForwardAuth (tinyauth pattern from home-server):
 
 ```yaml
 ingress:
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: "auth-namespace-forward-auth@kubernetescrd"
+    traefik.ingress.kubernetes.io/router.middlewares: "tinyauth-forward-auth@kubernetescrd"
 ```
 
 ### 4.1 Health Probes and Auth
@@ -336,27 +340,40 @@ k8s liveness and readiness probes originate from the kubelet and hit the **pod I
 
 ### 4.2 Redirect URLs
 
-This app has no OAuth flows, no login callbacks, no session state. No redirect URLs need to be configured anywhere in the application. The hostname only appears in `--cors-origin` and the Ingress `host:` field.
+This app has no OAuth flows, no login callbacks, no session state. No redirect URLs need to be configured anywhere in the application. The hostname only appears in `GIFT_EXCHANGE_CORS_ORIGIN` and the Ingress `host:` field.
 
 ---
 
 ## 5. Configuration Reference
 
-All server configuration is passed via `args:` in the Deployment. No env var support is needed — there are no secrets or sensitive values.
+Server configuration is read from `GIFT_EXCHANGE_*` environment variables. CLI flags take precedence over env vars; env vars take precedence over hardcoded defaults. This allows k8s Deployments to configure via `env:` without modifying the Deployment spec between environments.
 
-| Flag            | Default    | k8s value                                           |
-| --------------- | ---------- | --------------------------------------------------- |
-| `--addr`        | `:8080`    | `:8080` (usually left as default)                   |
-| `--cors-origin` | `*`        | Set to `https://<hostname>` in production           |
-| `--timeout`     | `15s`      | `15s` (increase if solver is slow for large groups) |
-| `--static`      | (embedded) | Not set in production; `server/web/` in development |
+| Flag            | Env var                    | Default    | k8s value                                           |
+| --------------- | -------------------------- | ---------- | --------------------------------------------------- |
+| `--addr`        | `GIFT_EXCHANGE_ADDR`       | `:8080`    | `:8080` (usually left as default)                   |
+| `--cors-origin` | `GIFT_EXCHANGE_CORS_ORIGIN`| `*`        | Set to `https://<hostname>` in production           |
+| `--timeout`     | `GIFT_EXCHANGE_TIMEOUT`    | `15s`      | `15s` (increase if solver is slow for large groups) |
+| `--static`      | `GIFT_EXCHANGE_STATIC`     | (embedded) | Not set in production; `server/web/` in development |
+
+Implementation pattern in `server/main.go`:
+
+```go
+func envOrDefault(key, fallback string) string {
+    if v := os.Getenv("GIFT_EXCHANGE_" + key); v != "" {
+        return v
+    }
+    return fallback
+}
+```
+
+Flags are defined with `envOrDefault` as the default value so that an explicit flag still wins.
 
 ---
 
 ## 6. Implementation Plan
 
 1. Move `web/` to `server/web/`. Update `README.md`. Verify `go build ./server/` and all tests pass.
-2. Create `server/static.go`. Update `server/main.go` to serve embedded FS when `--static` is empty. Test: `go run ./server/` serves the frontend.
-3. Write `deploy/Dockerfile` and `.dockerignore`. Test: `docker build` succeeds; `docker run -p 8080:8080` serves the frontend.
-4. Write Helm chart (`Chart.yaml`, `values.yaml`, four templates). Test: `helm template gift-exchange deploy/helm/gift-exchange --set image.repository=x --set image.tag=y --set server.corsOrigin=https://x --set ingress.hostname=x` renders valid YAML.
+2. Create `server/static.go`. Update `server/main.go`: serve embedded FS when `--static` is empty; add `GIFT_EXCHANGE_*` env var fallbacks for all flags. Test: `go run ./server/` serves the frontend.
+3. Write `Dockerfile` and `.dockerignore` at project root. Test: `docker build -t gift-exchange:latest .` succeeds; `docker run -p 8080:8080` serves the frontend.
+4. Write Helm chart (`Chart.yaml`, `values.yaml`, four templates). Test: `helm template gift-exchange helm/gift-exchange --set image.repository=x --set server.corsOrigin=https://x --set ingress.hostname=x` renders valid YAML.
 5. Deploy to target cluster. Verify health probe, UI access through auth proxy, solve request.

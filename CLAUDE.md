@@ -39,7 +39,7 @@ Do not start any implementation work before reading the relevant phase plan.
 
 **Active phase**: Phase 7 — Deployment.
 **Last session**: Completed Phase 6. Solution display now shows names + per-assignment lines (no truncation). Sidebar sections use `<details>/<summary>` for collapsing. Added Relationships section (symmetric ↔ blocks), "Add as history blocks" button in solutions panel. Mobile layout via `@media (max-width: 640px)` stacked column; fixed flex override bug (`flex: none` on graph container). `web/` path is still at root (moves to `server/web/` in Phase 7).
-**Next action**: Phase 7 — (1) move `web/` → `server/web/`, (2) `server/static.go` go:embed, (3) update `newServer()`, (4) Dockerfile, (5) Helm chart.
+**Next action**: Phase 7 — (1) move `web/` → `server/web/`, (2) `server/static.go` go:embed, (3) update `newServer()` + add `GIFT_EXCHANGE_*` env vars, (4) `Dockerfile` at root, (5) `helm/gift-exchange/` at root.
 
 ---
 
@@ -70,6 +70,13 @@ gift-exchange/
 │   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
 │   ├── main.go                ← flag parsing (--addr, --cors-origin, --timeout, --static), newServer
 │   └── handlers_test.go       ← 10 handler tests using httptest (all passing)
+├── Dockerfile                 ← Phase 7: multi-stage build (project root)
+├── .dockerignore
+├── helm/                      ← Phase 7: Helm chart (project root)
+│   └── gift-exchange/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
 ├── web/                       ← COMPLETE (Phases 5–6); moves to server/web/ in Phase 7
 │   ├── index.html             ← two-panel layout shell; app.js loaded as ES module
 │   ├── style.css              ← layout, form, graph, solution tab styling
