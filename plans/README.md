@@ -8,7 +8,7 @@
 - [x] **Phase 4 — Web Backend**: Complete. `POST /api/v1/solve`, `GET /api/v1/health`, CORS middleware, 10 handler tests passing.
 - [x] **Phase 5 — Web Frontend**: Complete. Vanilla JS/D3 two-panel UI; force-directed graph; solution tabs; JSON import/export.
 - [x] **Phase 6 — UI Polish**: Bug fixes (solution display, collapsible sections), symmetric relationships, "Add as history blocks", mobile layout.
-- [ ] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
+- [x] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
 - [ ] **Phase 8 — Required Assignments**: Full-stack feature: force specific gifter→recipient pairs in every solution.
 
 ---

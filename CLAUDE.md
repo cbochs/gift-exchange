@@ -37,9 +37,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 7 — Deployment.
-**Last session**: Completed Phase 6. Solution display now shows names + per-assignment lines (no truncation). Sidebar sections use `<details>/<summary>` for collapsing. Added Relationships section (symmetric ↔ blocks), "Add as history blocks" button in solutions panel. Mobile layout via `@media (max-width: 640px)` stacked column; fixed flex override bug (`flex: none` on graph container). `web/` path is still at root (moves to `server/web/` in Phase 7).
-**Next action**: Phase 7 — (1) move `web/` → `server/web/`, (2) `server/static.go` go:embed, (3) update `newServer()` + add `GIFT_EXCHANGE_*` env vars, (4) `Dockerfile` at root, (5) `helm/gift-exchange/` at root.
+**Active phase**: Phase 8 — Required Assignments.
+**Last session**: Completed Phase 7. Moved `web/` to `server/web/`; added `go:embed` (`server/static.go`); server now serves embedded assets by default and reads config from `GIFT_EXCHANGE_*` env vars with flag override. `Dockerfile` (golang:1.26-alpine → distroless:nonroot, 3.1 MB image) and `helm/gift-exchange/` (Chart.yaml, values.yaml, four templates) at project root. `go.sum` created (empty; no external deps). All tests pass; `helm template` and `docker run` verified.
+**Next action**: Phase 8 — read phase8-required.md plan before starting.
 
 ---
 
@@ -68,19 +68,17 @@ gift-exchange/
 ├── server/                    ← COMPLETE — HTTP server (package main)
 │   ├── api.go                 ← DTO types: SolveRequest, SolveResponse, ErrorResponse, etc.
 │   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
-│   ├── main.go                ← flag parsing (--addr, --cors-origin, --timeout, --static), newServer
-│   └── handlers_test.go       ← 10 handler tests using httptest (all passing)
-├── Dockerfile                 ← Phase 7: multi-stage build (project root)
+│   ├── main.go                ← flags + GIFT_EXCHANGE_* env vars; embedded asset serving
+│   ├── static.go              ← go:embed web
+│   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
+│   └── web/                   ← embedded frontend assets (moved from root web/)
+├── Dockerfile                 ← COMPLETE — golang:1.26-alpine → distroless:nonroot; 3.1 MB
 ├── .dockerignore
-├── helm/                      ← Phase 7: Helm chart (project root)
+├── helm/                      ← COMPLETE — publishable Helm chart
 │   └── gift-exchange/
-│       ├── Chart.yaml
-│       ├── values.yaml
-│       └── templates/
-├── web/                       ← COMPLETE (Phases 5–6); moves to server/web/ in Phase 7
-│   ├── index.html             ← two-panel layout shell; app.js loaded as ES module
-│   ├── style.css              ← layout, form, graph, solution tab styling
-│   └── app.js                 ← state, D3 force graph, API client, import/export
+│       ├── Chart.yaml         ← version + appVersion: 0.1.0
+│       ├── values.yaml        ← image.tag defaults to Chart.appVersion
+│       └── templates/         ← deployment, service, ingress, _helpers
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
@@ -89,7 +87,7 @@ gift-exchange/
 │   ├── phase4-web-backend.md  ← COMPLETE
 │   ├── phase5-web-frontend.md ← COMPLETE
 │   ├── phase6-polish.md       ← COMPLETE
-│   ├── phase7-deployment.md   ← PLANNED — go:embed, Dockerfile, Helm chart
+│   ├── phase7-deployment.md   ← COMPLETE
 │   └── phase8-required.md     ← PLANNED — required assignments (full-stack)
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive

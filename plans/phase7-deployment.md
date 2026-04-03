@@ -7,7 +7,7 @@
 - [x] `server/main.go` — serve embedded assets when `--static` is not set; add `GIFT_EXCHANGE_*` env var fallbacks
 - [x] `Dockerfile` — multi-stage build (project root)
 - [x] `helm/gift-exchange/` — Helm chart (Chart.yaml, values.yaml, templates/)
-- [ ] Smoke test: Docker container serves frontend; `helm template` renders cleanly
+- [x] Smoke test: Docker container serves frontend; `helm template` renders cleanly
 
 ## Goal
 
