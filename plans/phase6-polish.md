@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] Bug fix: solution display (names, per-assignment layout, no truncation)
-- [ ] Bug fix: collapsible sidebar sections
-- [ ] Feature: symmetric relationships
-- [ ] Feature: "Add as history blocks" button
-- [ ] Feature: mobile layout
+- [x] Bug fix: solution display (names, per-assignment layout, no truncation)
+- [x] Bug fix: collapsible sidebar sections
+- [x] Feature: symmetric relationships
+- [x] Feature: "Add as history blocks" button
+- [x] Feature: mobile layout
 
 ## Goal
 

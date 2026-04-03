@@ -26,11 +26,15 @@ go run ./server/ --static web/
 Then open `http://localhost:8080` in a browser.
 
 - Add participants by name; IDs are auto-generated
-- Add optional blocks (directed: Alice → Bob prevents Alice giving to Bob)
+- Add **Relationships** (symmetric, e.g. partners/siblings — Alice ↔ Bob blocks both directions at once)
+- Add **Blocks** (directed, e.g. history — Alice → Bob prevents Alice giving to Bob)
 - Click **Generate** to solve and display ranked solutions
+- Solutions show each assignment by name, grouped by cycle with a color-matched indicator
 - The graph shows valid pairings in grey and the selected solution in color — one color per cycle
 - Click solution tabs to switch between ranked results
+- **Add as history blocks** copies the selected solution's assignments into the Blocks list for next year
 - **Download JSON** saves the full problem + solutions; **Import JSON** restores it (cached solutions are displayed immediately with no API call)
+- Works on mobile — sidebar sections are collapsible to save space
 
 ---
 

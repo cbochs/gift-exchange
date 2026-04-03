@@ -27,13 +27,19 @@ everyone). Returns multiple ranked solutions.
 
 Do not start any implementation work before reading the relevant phase plan.
 
+**Docs to keep current after every session:**
+- `CLAUDE.md` — active phase, last session summary, next action, codebase tree
+- `plans/README.md` — phase checklist (`[ ]` → `[x]` when complete)
+- `plans/phase<N>-*.md` — status checklist at the top of the active phase
+- `README.md` — user-facing feature list (update when UI features are added)
+
 ---
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 6 — UI Polish (in progress).
-**Last session**: Planned Phases 6–8. Added `plans/phase6-polish.md`, `plans/phase7-deployment.md`, `plans/phase8-required.md`. Also extended `experiments/cousins_2026/cousins_2026.json` with 2019 history blocks (2018 makes the problem infeasible — Hall's condition violated for a 7-person subset). Added `experiments/cousins_2026/verify.py` reusable verification script.
-**Next action**: Implement Phase 6 in order: (1) solution display bug fix, (2) collapsible sidebar sections, (3) symmetric relationships, (4) "add as history blocks", (5) mobile layout.
+**Active phase**: Phase 7 — Deployment.
+**Last session**: Completed Phase 6. Solution display now shows names + per-assignment lines (no truncation). Sidebar sections use `<details>/<summary>` for collapsing. Added Relationships section (symmetric ↔ blocks), "Add as history blocks" button in solutions panel. Mobile layout via `@media (max-width: 640px)` stacked column; fixed flex override bug (`flex: none` on graph container). `web/` path is still at root (moves to `server/web/` in Phase 7).
+**Next action**: Phase 7 — (1) move `web/` → `server/web/`, (2) `server/static.go` go:embed, (3) update `newServer()`, (4) Dockerfile, (5) Helm chart.
 
 ---
 
@@ -64,7 +70,7 @@ gift-exchange/
 │   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
 │   ├── main.go                ← flag parsing (--addr, --cors-origin, --timeout, --static), newServer
 │   └── handlers_test.go       ← 10 handler tests using httptest (all passing)
-├── web/                       ← COMPLETE (Phase 5); Phase 6 in progress
+├── web/                       ← COMPLETE (Phases 5–6); moves to server/web/ in Phase 7
 │   ├── index.html             ← two-panel layout shell; app.js loaded as ES module
 │   ├── style.css              ← layout, form, graph, solution tab styling
 │   └── app.js                 ← state, D3 force graph, API client, import/export
@@ -75,7 +81,7 @@ gift-exchange/
 │   ├── phase3-cli.md          ← COMPLETE
 │   ├── phase4-web-backend.md  ← COMPLETE
 │   ├── phase5-web-frontend.md ← COMPLETE
-│   ├── phase6-polish.md       ← IN PROGRESS — bug fixes + features (frontend only)
+│   ├── phase6-polish.md       ← COMPLETE
 │   ├── phase7-deployment.md   ← PLANNED — go:embed, Dockerfile, Helm chart
 │   └── phase8-required.md     ← PLANNED — required assignments (full-stack)
 └── experiments/
