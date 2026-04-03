@@ -11,7 +11,7 @@ Multiple ranked solutions are returned so organizers can choose.
 | **Library**      | `lib/`              | Core solver — pure Go, no dependencies |
 | **CLI**          | `cmd/giftexchange/` | Command-line tool wrapping the library |
 | **Web backend**  | `server/`           | HTTP API server wrapping the library   |
-| **Web frontend** | `web/`              | Browser UI consuming the HTTP API      |
+| **Web frontend** | `server/web/`       | Browser UI consuming the HTTP API      |
 
 ---
 
@@ -20,7 +20,11 @@ Multiple ranked solutions are returned so organizers can choose.
 Run the server with the frontend:
 
 ```bash
-go run ./server/ --static web/
+# Development (live files, no rebuild):
+go run ./server/ --static server/web/
+
+# Production (embedded assets):
+go run ./server/
 ```
 
 Then open `http://localhost:8080` in a browser.
