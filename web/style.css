@@ -417,12 +417,12 @@ button:hover { background: var(--bg); }
     flex-shrink: 0;
   }
   .main-panel {
+    flex: none;
     overflow: visible;
-    min-height: 0;
   }
   #graph-container {
+    flex: none;
     height: 300px;
-    flex-shrink: 0;
   }
   #solutions-panel {
     height: auto;
