@@ -437,15 +437,25 @@ function renderSolutionsPanel() {
   // Detail
   const sol = state.solutions[state.selectedSolution];
   const { min_cycle_len, num_cycles, max_cycle_len } = sol.score;
-  const cycleLines = sol.cycles.map((cycle, ci) => {
+  const nameOf = Object.fromEntries(state.participants.map(p => [p.id, p.name]));
+  const cycleGroups = sol.cycles.map((cycle, ci) => {
     const color = CYCLE_COLORS[ci % CYCLE_COLORS.length];
-    const loop = esc([...cycle, cycle[0]].join(" → "));
-    return `<div class="cycle-line" style="color:${color}">[${ci + 1}] ${loop}</div>`;
+    const lines = cycle.map((id, i) => {
+      const nextId = cycle[(i + 1) % cycle.length];
+      return `<div class="assignment-line">${esc(nameOf[id] ?? id)} → ${esc(nameOf[nextId] ?? nextId)}</div>`;
+    }).join("");
+    return `<div class="cycle-group">
+      <div class="cycle-header">
+        <span class="cycle-dot" style="background:${color}"></span>
+        <span>Cycle ${ci + 1} · ${cycle.length} ${cycle.length === 1 ? "person" : "people"}</span>
+      </div>
+      <div class="cycle-assignments">${lines}</div>
+    </div>`;
   }).join("");
 
   detailEl.innerHTML = `
     <div class="solution-score">min_cycle=${min_cycle_len} &nbsp; cycles=${num_cycles} &nbsp; max_cycle=${max_cycle_len}</div>
-    <div class="solution-cycles">${cycleLines}</div>`;
+    <div class="solution-cycles">${cycleGroups}</div>`;
 
   dlBtn.hidden = false;
 }

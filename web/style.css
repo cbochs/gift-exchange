@@ -285,15 +285,34 @@ header h1 {
 .solution-cycles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
-.cycle-line {
+.cycle-group {
+  margin-bottom: 8px;
+}
+
+.cycle-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.cycle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.assignment-line {
   font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
   font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 1px 0 1px 14px;
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────────── */
