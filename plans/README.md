@@ -7,6 +7,9 @@
 - [x] **Phase 3 — CLI**: Complete. `solve`, `validate`, `analyze` subcommands; round-trip verified.
 - [x] **Phase 4 — Web Backend**: Complete. `POST /api/v1/solve`, `GET /api/v1/health`, CORS middleware, 10 handler tests passing.
 - [x] **Phase 5 — Web Frontend**: Complete. Vanilla JS/D3 two-panel UI; force-directed graph; solution tabs; JSON import/export.
+- [ ] **Phase 6 — UI Polish**: Bug fixes (solution display, collapsible sections), symmetric relationships, "Add as history blocks", mobile layout.
+- [ ] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
+- [ ] **Phase 8 — Required Assignments**: Full-stack feature: force specific gifter→recipient pairs in every solution.
 
 ---
 
@@ -105,6 +108,9 @@ Full schema defined in `server/api.go` and detailed in Phase 4.
 | 3     | CLI                 | Expose the library via a usable command-line interface      |
 | 4     | Web Backend         | Wrap the library in a stateless HTTP API                    |
 | 5     | Web Frontend        | Build the presentation layer with graph visualization       |
+| 6     | UI Polish           | Bug fixes, symmetric relationships, history blocks, mobile layout |
+| 7     | Deployment          | Containerize and deploy to Kubernetes via Helm behind Forward Auth |
+| 8     | Required Assignments | Force specific gifter→recipient pairs in every solution    |
 
 Each phase builds on the previous. Phases 3 and 4 can overlap once the library API stabilizes.
 
