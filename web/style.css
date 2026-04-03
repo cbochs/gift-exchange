@@ -71,19 +71,30 @@ header h1 {
   flex-shrink: 0;
 }
 
-.sidebar-section {
+details.sidebar-section {
   padding: 14px 14px 12px;
   border-bottom: 1px solid var(--border);
 }
 
-.sidebar-section h2 {
+details.sidebar-section > summary {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
-  margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
 }
+details.sidebar-section > summary::marker,
+details.sidebar-section > summary::-webkit-details-marker { display: none; }
+details.sidebar-section > summary::after { content: "▾"; font-size: 10px; }
+details.sidebar-section:not([open]) > summary { padding-bottom: 0; }
+details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 
 /* Lists */
 #participant-list,
@@ -146,8 +157,10 @@ header h1 {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
-.block-add-row { flex-wrap: nowrap; }
-.block-add-row select { flex: 0 1 80px; }
+.block-add-row,
+.rel-add-row { flex-wrap: nowrap; }
+.block-add-row select,
+.rel-add-row select { flex: 0 1 80px; }
 .arrow-sep { color: var(--muted); flex-shrink: 0; }
 
 /* Options */
@@ -383,4 +396,43 @@ button:hover { background: var(--bg); }
   fill: none;
   stroke-width: 2.5;
   stroke-opacity: 0.85;
+}
+
+/* ─── Mobile layout ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  .layout {
+    flex-direction: column;
+    overflow: visible;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+    flex-shrink: 0;
+  }
+  .main-panel {
+    overflow: visible;
+    min-height: 0;
+  }
+  #graph-container {
+    height: 300px;
+    flex-shrink: 0;
+  }
+  #solutions-panel {
+    height: auto;
+    flex-shrink: 0;
+  }
+  #solution-detail {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .generate-row {
+    margin-top: 0;
+  }
 }

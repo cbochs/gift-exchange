@@ -9,13 +9,14 @@ const CYCLE_COLORS = ["#4c72b0", "#dd8452", "#55a868", "#c44e52", "#8172b2", "#9
 // ─── State ────────────────────────────────────────────────────────────────────
 
 const state = {
-  participants: [],   // [{id, name}]
-  blocks: [],         // [{from, to}]
+  participants: [],    // [{id, name}]
+  relationships: [],   // [{a, b}] symmetric pairs — expanded to two blocks at API call time
+  blocks: [],          // [{from, to}] directed blocks
   options: {
     maxSolutions: 5,
-    seed: null,       // null = random
+    seed: null,        // null = random
   },
-  solutions: [],      // SolutionDTO[]
+  solutions: [],       // SolutionDTO[]
   selectedSolution: 0,
   loading: false,
   error: null,
@@ -66,16 +67,29 @@ export function buildValidEdges(participants, blocks) {
   return edges;
 }
 
+// Returns the union of explicit directed blocks and the two-direction expansion
+// of symmetric relationships. This is what gets sent to the API.
+export function effectiveBlocks(state) {
+  return [
+    ...state.blocks,
+    ...state.relationships.flatMap(r => [
+      { from: r.a, to: r.b },
+      { from: r.b, to: r.a },
+    ]),
+  ];
+}
+
 export function stateToRequest(state) {
   const opts = { max_solutions: state.options.maxSolutions };
   if (state.options.seed != null) opts.seed = Number(state.options.seed);
-  return { participants: state.participants, blocks: state.blocks, options: opts };
+  return { participants: state.participants, blocks: effectiveBlocks(state), options: opts };
 }
 
 // Populates state from an imported JSON document.
 // Returns true if a new API call is needed, false if cached solutions can be used.
 export function applyImport(doc, state) {
   state.participants = doc.participants ?? [];
+  state.relationships = doc.relationships ?? [];
   state.blocks = doc.blocks ?? [];
   state.options.maxSolutions = doc.options?.max_solutions ?? 5;
   state.options.seed = doc.options?.seed ?? null;
@@ -244,7 +258,7 @@ function initGraph() {
 // Full graph restart: called when participants, blocks, or solve results change.
 function restartGraph() {
   const nodes = syncNodes(state.participants);
-  const validEdges = buildValidEdges(state.participants, state.blocks);
+  const validEdges = buildValidEdges(state.participants, effectiveBlocks(state));
   const solutionEdges = buildSolutionEdges(state.solutions[state.selectedSolution]);
   const nodeColors = buildNodeColors(state.solutions[state.selectedSolution]);
 
@@ -325,6 +339,7 @@ function renderParticipantList() {
     btn.title = "Remove";
     btn.addEventListener("click", () => {
       state.participants.splice(i, 1);
+      state.relationships = state.relationships.filter(r => r.a !== p.id && r.b !== p.id);
       state.blocks = state.blocks.filter(b => b.from !== p.id && b.to !== p.id);
       state.solutions = [];
       state.selectedSolution = 0;
@@ -388,6 +403,56 @@ function renderBlockList() {
   });
 }
 
+function renderRelationshipDropdowns() {
+  const aSel = document.getElementById("rel-a");
+  const bSel = document.getElementById("rel-b");
+  const prevA = aSel.value;
+  const prevB = bSel.value;
+
+  [aSel, bSel].forEach(sel => {
+    sel.innerHTML = "";
+    state.participants.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+  });
+
+  if (prevA && state.participants.some(p => p.id === prevA)) aSel.value = prevA;
+  if (prevB && state.participants.some(p => p.id === prevB)) bSel.value = prevB;
+
+  const disabled = state.participants.length < 2;
+  aSel.disabled = disabled;
+  bSel.disabled = disabled;
+  document.getElementById("btn-add-relationship").disabled = disabled;
+}
+
+function renderRelationshipList() {
+  const ul = document.getElementById("relationship-list");
+  ul.innerHTML = "";
+  state.relationships.forEach((r, i) => {
+    const aName = state.participants.find(p => p.id === r.a)?.name ?? r.a;
+    const bName = state.participants.find(p => p.id === r.b)?.name ?? r.b;
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${esc(aName)} ↔ ${esc(bName)}</span>`;
+    const btn = document.createElement("button");
+    btn.className = "remove-btn";
+    btn.textContent = "×";
+    btn.title = "Remove";
+    btn.addEventListener("click", () => {
+      state.relationships.splice(i, 1);
+      state.solutions = [];
+      state.selectedSolution = 0;
+      renderSidebar();
+      renderSolutionsPanel();
+      restartGraph();
+    });
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+}
+
 function renderOptions() {
   document.getElementById("opt-max-solutions").value = state.options.maxSolutions;
   document.getElementById("opt-seed").value = state.options.seed ?? "";
@@ -395,6 +460,8 @@ function renderOptions() {
 
 function renderSidebar() {
   renderParticipantList();
+  renderRelationshipDropdowns();
+  renderRelationshipList();
   renderBlockDropdowns();
   renderBlockList();
 
@@ -411,11 +478,13 @@ function renderSidebar() {
 function renderSolutionsPanel() {
   const tabsEl = document.getElementById("solution-tabs");
   const detailEl = document.getElementById("solution-detail");
+  const histBtn = document.getElementById("btn-add-history");
   const dlBtn = document.getElementById("btn-download");
 
   if (!state.solutions.length) {
     tabsEl.innerHTML = "";
     detailEl.innerHTML = "";
+    histBtn.hidden = true;
     dlBtn.hidden = true;
     return;
   }
@@ -457,6 +526,7 @@ function renderSolutionsPanel() {
     <div class="solution-score">min_cycle=${min_cycle_len} &nbsp; cycles=${num_cycles} &nbsp; max_cycle=${max_cycle_len}</div>
     <div class="solution-cycles">${cycleGroups}</div>`;
 
+  histBtn.hidden = false;
   dlBtn.hidden = false;
 }
 
@@ -501,9 +571,25 @@ async function onGenerate() {
 
 // ─── JSON import/export ───────────────────────────────────────────────────────
 
+function onAddAsHistoryBlocks() {
+  const sol = state.solutions[state.selectedSolution];
+  if (!sol) return;
+  for (const { gifter_id, recipient_id } of sol.assignments) {
+    if (!state.blocks.some(b => b.from === gifter_id && b.to === recipient_id)) {
+      state.blocks.push({ from: gifter_id, to: recipient_id });
+    }
+  }
+  state.solutions = [];
+  state.selectedSolution = 0;
+  renderSidebar();
+  renderSolutionsPanel();
+  restartGraph();
+}
+
 function onDownload() {
   const doc = {
     participants: state.participants,
+    ...(state.relationships.length ? { relationships: state.relationships } : {}),
     blocks: state.blocks,
     options: {
       max_solutions: state.options.maxSolutions,
@@ -584,6 +670,21 @@ function wireEvents() {
   nameInput.addEventListener("keydown", e => { if (e.key === "Enter") addParticipant(); });
   document.getElementById("btn-add-participant").addEventListener("click", addParticipant);
 
+  // Add relationship
+  document.getElementById("btn-add-relationship").addEventListener("click", () => {
+    const a = document.getElementById("rel-a").value;
+    const b = document.getElementById("rel-b").value;
+    if (!a || !b || a === b) return;
+    const key = [a, b].sort().join("|");
+    if (state.relationships.some(r => [r.a, r.b].sort().join("|") === key)) return;
+    state.relationships.push({ a, b });
+    state.solutions = [];
+    state.selectedSolution = 0;
+    renderSidebar();
+    renderSolutionsPanel();
+    restartGraph();
+  });
+
   // Add block
   document.getElementById("btn-add-block").addEventListener("click", () => {
     const from = document.getElementById("block-from").value;
@@ -609,6 +710,9 @@ function wireEvents() {
 
   // Generate
   document.getElementById("btn-generate").addEventListener("click", onGenerate);
+
+  // Add as history blocks
+  document.getElementById("btn-add-history").addEventListener("click", onAddAsHistoryBlocks);
 
   // Download
   document.getElementById("btn-download").addEventListener("click", onDownload);

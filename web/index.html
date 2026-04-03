@@ -18,18 +18,29 @@
   <div class="layout">
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
-      <section class="sidebar-section">
-        <h2>Participants</h2>
+      <details class="sidebar-section" open>
+        <summary>Participants</summary>
         <ul id="participant-list"></ul>
         <div class="add-row">
           <input id="new-participant-name" type="text" placeholder="Name" maxlength="60" autocomplete="off">
           <button id="btn-add-participant">Add</button>
         </div>
         <div id="participant-error" class="field-error"></div>
-      </section>
+      </details>
 
-      <section class="sidebar-section">
-        <h2>Blocks</h2>
+      <details class="sidebar-section" open>
+        <summary>Relationships</summary>
+        <ul id="relationship-list"></ul>
+        <div class="add-row rel-add-row">
+          <select id="rel-a"></select>
+          <span class="arrow-sep">↔</span>
+          <select id="rel-b"></select>
+          <button id="btn-add-relationship">Add</button>
+        </div>
+      </details>
+
+      <details class="sidebar-section" open>
+        <summary>Blocks</summary>
         <ul id="block-list"></ul>
         <div class="add-row block-add-row">
           <select id="block-from"></select>
@@ -37,10 +48,10 @@
           <select id="block-to"></select>
           <button id="btn-add-block">Add</button>
         </div>
-      </section>
+      </details>
 
-      <section class="sidebar-section">
-        <h2>Options</h2>
+      <details class="sidebar-section">
+        <summary>Options</summary>
         <div class="option-fields">
           <label>
             Max results
@@ -51,7 +62,7 @@
             <input id="opt-seed" type="number" min="1" placeholder="auto">
           </label>
         </div>
-      </section>
+      </details>
 
       <div class="generate-row">
         <button id="btn-generate" class="btn-primary">Generate</button>
@@ -70,6 +81,7 @@
         <div id="solutions-header">
           <span class="solutions-label">Solutions</span>
           <div id="solution-tabs"></div>
+          <button id="btn-add-history" class="btn-secondary" hidden>Add as history blocks</button>
           <button id="btn-download" class="btn-secondary" hidden>Download JSON</button>
         </div>
         <div id="solution-detail"></div>
