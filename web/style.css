@@ -98,6 +98,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 
 /* Lists */
 #participant-list,
+#relationship-list,
 #block-list {
   list-style: none;
   display: flex;
@@ -107,6 +108,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 }
 
 #participant-list li,
+#relationship-list li,
 #block-list li {
   display: flex;
   align-items: center;
@@ -118,6 +120,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 }
 
 #participant-list li .remove-btn,
+#relationship-list li .remove-btn,
 #block-list li .remove-btn {
   background: none;
   border: none;
@@ -130,6 +133,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
   margin-left: 6px;
 }
 #participant-list li .remove-btn:hover,
+#relationship-list li .remove-btn:hover,
 #block-list li .remove-btn:hover { color: var(--danger); }
 
 /* Add row */
