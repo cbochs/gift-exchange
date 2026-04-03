@@ -1,0 +1,7 @@
+experiments/
+plans/
+giftexchange.py
+participants.json
+relationships.json
+history.json
+.git/

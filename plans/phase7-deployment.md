@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] Move `web/` to `server/web/`; update README dev command
-- [ ] `server/static.go` — `go:embed` for self-contained binary
-- [ ] `server/main.go` — serve embedded assets when `--static` is not set; add `GIFT_EXCHANGE_*` env var fallbacks
-- [ ] `Dockerfile` — multi-stage build (project root)
-- [ ] `helm/gift-exchange/` — Helm chart (Chart.yaml, values.yaml, templates/)
+- [x] Move `web/` to `server/web/`; update README dev command
+- [x] `server/static.go` — `go:embed` for self-contained binary
+- [x] `server/main.go` — serve embedded assets when `--static` is not set; add `GIFT_EXCHANGE_*` env var fallbacks
+- [x] `Dockerfile` — multi-stage build (project root)
+- [x] `helm/gift-exchange/` — Helm chart (Chart.yaml, values.yaml, templates/)
 - [ ] Smoke test: Docker container serves frontend; `helm template` renders cleanly
 
 ## Goal
