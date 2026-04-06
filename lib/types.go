@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+// ErrInvalid is returned when the Problem definition is structurally malformed:
+// too few participants, duplicate IDs, or constraint references to unknown IDs.
+// It is distinct from ErrInfeasible: an invalid problem has a definition error;
+// an infeasible problem is well-formed but has no valid assignment.
+var ErrInvalid = errors.New("invalid problem")
+
 // ErrInfeasible is returned when no valid gift exchange assignment exists
 // under the given constraints (all N/M progression levels exhausted, or
 // Hall's condition violated).

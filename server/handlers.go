@@ -38,11 +38,14 @@ func (h *handler) solveHandler(w http.ResponseWriter, r *http.Request) {
 
 	solutions, err := ge.Solve(r.Context(), prob, opts)
 	if err != nil {
-		status := http.StatusUnprocessableEntity
-		if isValidationErr(err) {
-			status = http.StatusBadRequest
+		switch {
+		case errors.Is(err, ge.ErrInvalid):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ge.ErrInfeasible):
+			writeError(w, http.StatusUnprocessableEntity, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "internal error")
 		}
-		writeError(w, status, err.Error())
 		return
 	}
 
@@ -132,12 +135,6 @@ func solutionsToDTOs(solutions []ge.Solution) []SolutionDTO {
 		}
 	}
 	return dtos
-}
-
-// isValidationErr reports whether err is a structural validation error (→ 400)
-// rather than an infeasibility error (→ 422).
-func isValidationErr(err error) bool {
-	return !errors.Is(err, ge.ErrInfeasible)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

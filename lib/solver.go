@@ -66,26 +66,27 @@ func Validate(p Problem) error {
 }
 
 // validate checks structural validity of the problem and Hall's condition.
-// Returns ErrInfeasible if any participant has no valid recipients or gifters.
+// Returns ErrInvalid (wrapped) for structural errors or ErrInfeasible if
+// any participant has no valid recipients or gifters.
 func validate(p Problem) error {
 	if len(p.Participants) < 2 {
-		return fmt.Errorf("at least 2 participants required, got %d", len(p.Participants))
+		return fmt.Errorf("%w: at least 2 participants required, got %d", ErrInvalid, len(p.Participants))
 	}
 
 	ids := make(map[string]bool, len(p.Participants))
 	for _, part := range p.Participants {
 		if ids[part.ID] {
-			return fmt.Errorf("duplicate participant ID: %q", part.ID)
+			return fmt.Errorf("%w: duplicate participant ID: %q", ErrInvalid, part.ID)
 		}
 		ids[part.ID] = true
 	}
 
 	for _, b := range p.Blocks {
 		if !ids[b.From] {
-			return fmt.Errorf("block references unknown participant ID: %q", b.From)
+			return fmt.Errorf("%w: block references unknown participant ID: %q", ErrInvalid, b.From)
 		}
 		if !ids[b.To] {
-			return fmt.Errorf("block references unknown participant ID: %q", b.To)
+			return fmt.Errorf("%w: block references unknown participant ID: %q", ErrInvalid, b.To)
 		}
 	}
 
