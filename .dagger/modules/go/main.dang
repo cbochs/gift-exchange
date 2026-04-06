@@ -34,7 +34,26 @@ type Go {
       withEnvVariable("CGO_ENABLED", "0").
       withMountedDirectory("/work", source).
       withWorkdir("/work").
-      withExec(["go", "build", "-o", "binary", pkg]).
-      file("binary")
+      withExec(["go", "build", "-trimpath", "-ldflags=-s -w", "-o", "gift-exchange", pkg]).
+      file("gift-exchange")
+  }
+
+  """
+  Run go vet and go test -race against the source tree.
+  """
+  pub Test(
+    """
+    Source Go directory.
+    """
+    source: Directory!,
+  ): String! {
+    container.
+      from(defaultImage).
+      withEnvVariable("CGO_ENABLED", "1").
+      withMountedDirectory("/work", source).
+      withWorkdir("/work").
+      withExec(["go", "vet", "./..."]).
+      withExec(["go", "test", "-race", "./..."]).
+      stdout
   }
 }

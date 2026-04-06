@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
 )
 
 // Solve is the single entry point for the library.
@@ -17,11 +16,6 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 
 	if opts.MaxSolutions <= 0 {
 		opts.MaxSolutions = DefaultMaxSolutions
-	}
-
-	seed := opts.Seed
-	if seed == 0 {
-		seed = time.Now().UnixNano()
 	}
 
 	if opts.Timeout > 0 {
@@ -58,7 +52,7 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 		} else {
 			solver = constrainedSolver(target)
 		}
-		solutions := collectSolutions(ctx, solver, g, seed, opts.MaxSolutions)
+		solutions := collectSolutions(ctx, solver, g, opts.Seed, opts.MaxSolutions)
 		if len(solutions) > 0 {
 			sortByScore(solutions)
 			return solutions, nil

@@ -2,6 +2,13 @@ type GiftExchange {
   let ws: Workspace!
 
   """
+  Run go vet and go test -race against the source tree.
+  """
+  pub Test(): String! {
+    go.test(self.ws.directory(""))
+  }
+
+  """
   Build the gift-exchange server container.
   """
   pub Container(

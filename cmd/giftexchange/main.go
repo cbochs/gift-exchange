@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/cbochs/gift-exchange/internal/dto"
 	ge "github.com/cbochs/gift-exchange/lib"
@@ -135,7 +134,7 @@ func cmdSolve(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	// Materialize the seed before calling Solve so the JSON output embeds the
 	// actual seed used, enabling exact round-trip reproducibility.
 	if opts.Seed == 0 {
-		opts.Seed = time.Now().UnixNano()
+		opts.Seed = ge.NewSeed()
 	}
 	// Keep doc.Options in sync with the effective values for round-trip output.
 	doc.Options.Seed = opts.Seed
