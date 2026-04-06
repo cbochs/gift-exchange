@@ -83,12 +83,14 @@ type solverFunc func(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool
 ```
 
 `hamiltonianDFS` is adapted to this signature directly:
+
 ```go
 func hamiltonianSolver(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool)
 ```
 
 `constrainedBacktrack` takes an extra parameter (`minCycleLen`), so it is wrapped by
 a factory function:
+
 ```go
 func constrainedSolver(minCycleLen int) solverFunc {
     return func(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool) {
@@ -98,11 +100,13 @@ func constrainedSolver(minCycleLen int) solverFunc {
 ```
 
 `collectSolutions` becomes:
+
 ```go
 func collectSolutions(ctx context.Context, solver solverFunc, g *graph, seed int64, max int) []Solution
 ```
 
 `Solve` selects the solver before calling `collectSolutions`:
+
 ```go
 var solver solverFunc
 if target == g.n {
@@ -173,6 +177,7 @@ var ErrInvalid = errors.New("invalid problem")
 ```
 
 All errors from `validateStructural` wrap `ErrInvalid`:
+
 ```go
 return fmt.Errorf("%w: duplicate participant ID: %q", ErrInvalid, part.ID)
 ```
@@ -181,6 +186,7 @@ return fmt.Errorf("%w: duplicate participant ID: %q", ErrInvalid, part.ID)
 remains a pure sentinel.
 
 The server's handler then has a correct three-way dispatch:
+
 ```go
 switch {
 case errors.Is(err, ge.ErrInvalid):
@@ -196,12 +202,12 @@ default:
 
 **Summary of lib error contract:**
 
-| Error | Meaning | HTTP status |
-|---|---|---|
-| `ErrInvalid` (wrapped) | Problem definition is malformed | 400 |
-| `ErrInfeasible` (sentinel) | No valid assignment exists | 422 |
-| `context.DeadlineExceeded` | Solver timed out | 504 |
-| `context.Canceled` | Request canceled | 499 / drop |
+| Error                      | Meaning                         | HTTP status |
+| -------------------------- | ------------------------------- | ----------- |
+| `ErrInvalid` (wrapped)     | Problem definition is malformed | 400         |
+| `ErrInfeasible` (sentinel) | No valid assignment exists      | 422         |
+| `context.DeadlineExceeded` | Solver timed out                | 504         |
+| `context.Canceled`         | Request canceled                | 499 / drop  |
 
 No additional custom error types are needed. Context errors are stdlib; all other
 outcomes are covered by the two sentinels.
@@ -235,6 +241,7 @@ The lib types lose their JSON tags (they become pure domain/algorithm types with
 serialization concerns).
 
 **`internal/dto/types.go`** — types shared across CLI and server:
+
 ```go
 package dto
 
@@ -267,6 +274,7 @@ type SolutionDTO struct {
 ```
 
 **`internal/dto/mapping.go`** — conversion functions:
+
 ```go
 package dto
 
@@ -281,6 +289,7 @@ func SolutionsFromLib(ss []ge.Solution) []SolutionDTO { ... }
 ```
 
 **`server/api.go`** retains the HTTP-specific envelope types (not shared):
+
 ```go
 package server
 
@@ -313,6 +322,7 @@ type ErrorResponse struct {
 **`cmd/giftexchange/main.go`** imports from `internal/dto` for participant/block
 types; keeps its own `inputDoc` struct for round-trip fields (`_solutions`,
 `feasible`):
+
 ```go
 type inputDoc struct {
     Participants []dto.ParticipantDTO `json:"participants"`
@@ -325,6 +335,7 @@ type inputDoc struct {
 ```
 
 **`internal/dto/mapping_test.go`** — roundtrip tests:
+
 ```go
 func TestParticipantRoundtrip(t *testing.T) {
     orig := ge.Participant{ID: "a", Name: "Alice"}
@@ -417,12 +428,12 @@ Document the choice in `CLAUDE.md` if kept.
 
 **Problem.** Magic numbers appear in multiple files with no shared source of truth:
 
-| Value | Files |
-|---|---|
-| `MaxSolutions` default of `5` | `lib/solver.go`, `server/handlers.go`, `cmd/giftexchange/main.go` |
-| `collisionThreshold` of `5` | `lib/solver.go` (already a `const`, but unexported and inline) |
-| Body size limit `1<<20` (1 MB) | `server/handlers.go` |
-| Default timeout `10 * time.Second` | `server/handlers.go` |
+| Value                              | Files                                                             |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| `MaxSolutions` default of `5`      | `lib/solver.go`, `server/handlers.go`, `cmd/giftexchange/main.go` |
+| `collisionThreshold` of `5`        | `lib/solver.go` (already a `const`, but unexported and inline)    |
+| Body size limit `1<<20` (1 MB)     | `server/handlers.go`                                              |
+| Default timeout `10 * time.Second` | `server/handlers.go`                                              |
 
 **Fix — lib constants (exported, because callers need to reference defaults):**
 
@@ -468,6 +479,7 @@ referenced by `cmd/server/main.go` for flag defaults and `http.Server` construct
 `maxRequestBodyBytes` stays unexported (callers don't need it).
 
 **Decision rationale:**
+
 - Export a constant if a caller (outside the package) needs to reference it for
   defaults, display, or validation.
 - Keep unexported if it is purely an internal implementation detail (algorithm
@@ -478,6 +490,7 @@ referenced by `cmd/server/main.go` for flag defaults and `http.Server` construct
 ### R7 — Centralize seed resolution (three independent sites)
 
 **Problem.** "If seed == 0, generate one" logic appears independently in:
+
 1. `lib/solver.go:Solve()` — resolves seed if 0
 2. `server/handlers.go:dtoToProblem()` — resolves seed before calling `Solve`
 3. `cmd/giftexchange/main.go:cmdSolve()` — resolves seed before calling `Solve`
@@ -544,6 +557,7 @@ give the handler functions a receiver. This adds two lines of boilerplate per ha
 with no benefit.
 
 **Fix.** In `NewServer`:
+
 ```go
 mux.HandleFunc("POST /api/v1/solve", solveHandler)
 mux.HandleFunc("GET /api/v1/health", healthHandler)
@@ -563,6 +577,7 @@ mux.HandleFunc("GET /api/v1/health", healthHandler)
 `sort` package. `canonicalize` uses `fmt.Sprintf` for integer-to-string conversion.
 
 **Fix:**
+
 ```go
 // score.go: sort.Slice → slices.SortFunc
 slices.SortFunc(solutions, func(a, b Solution) int {
@@ -590,6 +605,7 @@ int→string case; `strings.Join` remains from `strings`). Update the import blo
    no local filesystem paths embedded.
 
 2. **Test + vet step.** Add a `Test` function to the Dagger module:
+
    ```go
    pub Test(): String! {
        container.from(defaultImage)

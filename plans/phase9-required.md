@@ -48,6 +48,7 @@ Required assignments are encoded entirely in the graph before the solver runs �
 **New helper `applyRequiredConstraints(g *graph, required []Block)`:**
 
 For each required assignment `(G → R)`:
+
 - Set `g.adj[gi] = []int{ri}` — G can only give to R.
 - Remove `ri` from `g.adj[j]` for all `j ≠ gi` — no one else can give to R.
 
@@ -81,15 +82,15 @@ The existing `validate()` runs structural checks first; Hall's condition is re-c
 
 ### 1.4 New Tests (`lib/solver_test.go`)
 
-| Test | Expected result |
-|---|---|
-| Required pair in 4-person problem | Every solution includes that assignment |
-| Multiple compatible required pairs | All solutions honor all of them |
-| Required pair also in Blocks | Validation error |
-| Required pair — unknown participant | Validation error |
-| Same gifter in two required entries | Validation error |
-| Same recipient in two required entries | Validation error |
-| Required assignment creates Hall's violation | `ErrInfeasible` |
+| Test                                         | Expected result                         |
+| -------------------------------------------- | --------------------------------------- |
+| Required pair in 4-person problem            | Every solution includes that assignment |
+| Multiple compatible required pairs           | All solutions honor all of them         |
+| Required pair also in Blocks                 | Validation error                        |
+| Required pair — unknown participant          | Validation error                        |
+| Same gifter in two required entries          | Validation error                        |
+| Same recipient in two required entries       | Validation error                        |
+| Required assignment creates Hall's violation | `ErrInfeasible`                         |
 
 ---
 
@@ -122,13 +123,13 @@ prob.Required = required
 
 ### 2.3 New Handler Tests
 
-| Test | Expected HTTP status |
-|---|---|
-| Valid required pair present in solution | 200 |
-| Required references unknown participant ID | 400 |
-| Required pair conflicts with block | 422 (ErrInfeasible) |
-| Required gifter appears twice | 400 |
-| Required recipient appears twice | 400 |
+| Test                                       | Expected HTTP status |
+| ------------------------------------------ | -------------------- |
+| Valid required pair present in solution    | 200                  |
+| Required references unknown participant ID | 400                  |
+| Required pair conflicts with block         | 422 (ErrInfeasible)  |
+| Required gifter appears twice              | 400                  |
+| Required recipient appears twice           | 400                  |
 
 ---
 
@@ -155,8 +156,9 @@ const state = {
 **Self-assignment and duplicate prevention:** same checks as the Blocks add-row.
 
 **Cascade delete:** when a participant is removed:
+
 ```js
-state.required = state.required.filter(r => r.from !== id && r.to !== id);
+state.required = state.required.filter((r) => r.from !== id && r.to !== id);
 ```
 
 ### 3.3 `stateToRequest()`

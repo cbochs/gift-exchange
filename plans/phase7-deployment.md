@@ -87,10 +87,10 @@ go.Build(source, pkg, platform) → File
 
 Three exported functions:
 
-| Function | Description |
-| --- | --- |
-| `Container(platform)` | Builds the binary via `go.Build`, adds it to a bare container with exec permissions. |
-| `Serve()` | Wraps `Container` as a `Service` for local testing. |
+| Function                                           | Description                                                                                                                                          |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Container(platform)`                              | Builds the binary via `go.Build`, adds it to a bare container with exec permissions.                                                                 |
+| `Serve()`                                          | Wraps `Container` as a `Service` for local testing.                                                                                                  |
 | `Publish(tag, username, password, registry, repo)` | Builds `linux/amd64` and `linux/arm64` variants, publishes a multi-arch manifest to `registry/repo:tag`. Defaults to `ghcr.io/cbochs/gift-exchange`. |
 
 ### 2.3 Publishing

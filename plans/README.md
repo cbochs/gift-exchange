@@ -102,17 +102,17 @@ Full schema defined in `server/api.go` and detailed in Phase 4.
 
 ## Phases
 
-| Phase | Title               | Goal                                                        |
-| ----- | ------------------- | ----------------------------------------------------------- |
-| 1     | Problem Exploration | Formalize the problem; identify algorithms and objective fn |
-| 2     | Core Library        | Implement and test the solver library                       |
-| 3     | CLI                 | Expose the library via a usable command-line interface      |
-| 4     | Web Backend         | Wrap the library in a stateless HTTP API                    |
-| 5     | Web Frontend        | Build the presentation layer with graph visualization       |
-| 6     | UI Polish           | Bug fixes, symmetric relationships, history blocks, mobile layout |
-| 7     | Deployment          | Containerize and deploy to Kubernetes via Helm behind Forward Auth |
-| 8     | Refactoring         | Solver abstraction, shared DTOs, project layout, error types, constants |
-| 9     | Required Assignments | Force specific gifter→recipient pairs in every solution   |
+| Phase | Title                | Goal                                                                    |
+| ----- | -------------------- | ----------------------------------------------------------------------- |
+| 1     | Problem Exploration  | Formalize the problem; identify algorithms and objective fn             |
+| 2     | Core Library         | Implement and test the solver library                                   |
+| 3     | CLI                  | Expose the library via a usable command-line interface                  |
+| 4     | Web Backend          | Wrap the library in a stateless HTTP API                                |
+| 5     | Web Frontend         | Build the presentation layer with graph visualization                   |
+| 6     | UI Polish            | Bug fixes, symmetric relationships, history blocks, mobile layout       |
+| 7     | Deployment           | Containerize and deploy to Kubernetes via Helm behind Forward Auth      |
+| 8     | Refactoring          | Solver abstraction, shared DTOs, project layout, error types, constants |
+| 9     | Required Assignments | Force specific gifter→recipient pairs in every solution                 |
 
 Each phase builds on the previous. Phases 3 and 4 can overlap once the library API stabilizes.
 
