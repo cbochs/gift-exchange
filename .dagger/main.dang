@@ -1,17 +1,33 @@
 type GiftExchange {
   let ws: Workspace!
 
-  pub Container(): Container! {
+  """
+  Build the gift-exchange server container.
+  """
+  pub Container(
+    """
+    Container platform.
+    """
+    platform: String! = "",
+  ): Container! {
     let source = self.ws.directory("")
-    container.
-      withFile("gift-exchange", go.build(source, "./server"), permissions: 493).
+    let binary = go.build(source, "./server", platform: platform)
+
+    container(platform: platform).
+      withFile("gift-exchange", binary, permissions: 493).
       withEntrypoint(["./gift-exchange"])
   }
 
+  """
+  Serve the gift-exchange server container.
+  """
   pub Serve(): Service! {
     self.Container.asService()
   }
 
+  """
+  Publish the gift-exchange server container.
+  """
   pub Publish(
     """
     Image tag.
@@ -38,9 +54,14 @@ type GiftExchange {
     """
     repo: String! = "cbochs/gift-exchange",
   ): String! {
+    let variants = [
+      self.Container(platform: "linux/amd64"),
+      self.Container(platform: "linux/arm64")
+    ]
+
     let addr = registry + "/" + repo + ":" + tag
-    self.Container.
+    container.
       withRegistryAuth(registry, username, password).
-      publish(addr)
+      publish(addr, platformVariants: variants)
   }
 }

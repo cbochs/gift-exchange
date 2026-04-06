@@ -11,9 +11,26 @@ type Go {
     Package to compile.
     """
     pkg: String!,
+
+    """
+    Platform to build for.
+    """
+    platform: String! = "",
   ): File! {
+    platform = platform ?? toString(defaultPlatform)
+    let goos = case (platform) {
+      "linux/amd64" => "linux"
+      "linux/arm64" => "linux"
+    }
+    let goarch = case (platform) {
+    "linux/amd64" => "amd64"
+    "linux/arm64" => "arm64"
+    }
+
     container.
       from(defaultImage).
+      withEnvVariable("GOOS", goos).
+      withEnvVariable("GOARCH", goarch).
       withEnvVariable("CGO_ENABLED", "0").
       withMountedDirectory("/work", source).
       withWorkdir("/work").
