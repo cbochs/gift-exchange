@@ -52,7 +52,13 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 		}
 		lastTarget = target
 
-		solutions := collectSolutions(ctx, g, target, seed, opts.MaxSolutions)
+		var solver solverFunc
+		if target == n {
+			solver = hamiltonianSolver
+		} else {
+			solver = constrainedSolver(target)
+		}
+		solutions := collectSolutions(ctx, solver, g, seed, opts.MaxSolutions)
 		if len(solutions) > 0 {
 			sortByScore(solutions)
 			return solutions, nil
@@ -119,13 +125,19 @@ func checkHall(g *graph) error {
 	return nil
 }
 
-// hamiltonianDFS attempts to find a Hamiltonian cycle in g using depth-first
+// solverFunc attempts to find a valid assignment for the given graph.
+// Returns (assign, true) on success, (nil, false) if no solution exists at
+// this constraint level. Must respect ctx cancellation.
+type solverFunc func(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool)
+
+// hamiltonianSolver attempts to find a Hamiltonian cycle in g using depth-first
 // search starting from node 0 (cycle rotation-invariance means fixing the start
 // does not miss any solutions). Per-node adjacency list shuffling ensures
 // different calls explore different paths, producing diverse solutions.
 //
-// Returns (assign, true) on success, (nil, false) if no Hamiltonian cycle exists.
-func hamiltonianDFS(g *graph, rng *rand.Rand) ([]int, bool) {
+// Returns (assign, true) on success, (nil, false) if no Hamiltonian cycle exists
+// or ctx is canceled.
+func hamiltonianSolver(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool) {
 	assign := make([]int, g.n)
 	for i := range assign {
 		assign[i] = -1
@@ -135,8 +147,14 @@ func hamiltonianDFS(g *graph, rng *rand.Rand) ([]int, bool) {
 	path = append(path, 0)
 	visited[0] = true
 
+	var calls int
 	var dfs func() bool
 	dfs = func() bool {
+		// Check context every 256 calls — negligible overhead, enables clean cancellation.
+		calls++
+		if calls&0xFF == 0 && ctx.Err() != nil {
+			return false
+		}
 		if len(path) == g.n {
 			last := path[len(path)-1]
 			if g.isEdge(last, 0) {
@@ -192,51 +210,59 @@ func wouldClosePrematureCycle(assign []int, gifter, recipient, minLen int) bool 
 	}
 }
 
-// constrainedBacktrack finds a valid cycle cover where all cycles have length
-// >= minCycleLen. Used only when hamiltonianDFS has confirmed no Hamiltonian
-// cycle exists in the graph (i.e., for M > 1 in the N/M progression).
-func constrainedBacktrack(g *graph, rng *rand.Rand, minCycleLen int) ([]int, bool) {
-	assign := make([]int, g.n)
-	for i := range assign {
-		assign[i] = -1
-	}
-	usedRecipient := make([]bool, g.n)
-
-	var backtrack func(gifter int) bool
-	backtrack = func(gifter int) bool {
-		if gifter == g.n {
-			return true
+// constrainedSolver returns a solverFunc that finds a valid cycle cover where
+// all cycles have length >= minCycleLen. Used only when hamiltonianSolver has
+// confirmed no Hamiltonian cycle exists (i.e., for M > 1 in the N/M progression).
+func constrainedSolver(minCycleLen int) solverFunc {
+	return func(ctx context.Context, g *graph, rng *rand.Rand) ([]int, bool) {
+		assign := make([]int, g.n)
+		for i := range assign {
+			assign[i] = -1
 		}
-		for _, recipient := range shuffled(g.adj[gifter], rng) {
-			if usedRecipient[recipient] {
-				continue
+		usedRecipient := make([]bool, g.n)
+
+		var calls int
+		var backtrack func(gifter int) bool
+		backtrack = func(gifter int) bool {
+			// Check context every 256 calls.
+			calls++
+			if calls&0xFF == 0 && ctx.Err() != nil {
+				return false
 			}
-			if wouldClosePrematureCycle(assign, gifter, recipient, minCycleLen) {
-				continue
-			}
-			assign[gifter] = recipient
-			usedRecipient[recipient] = true
-			if backtrack(gifter + 1) {
+			if gifter == g.n {
 				return true
 			}
-			assign[gifter] = -1
-			usedRecipient[recipient] = false
+			for _, recipient := range shuffled(g.adj[gifter], rng) {
+				if usedRecipient[recipient] {
+					continue
+				}
+				if wouldClosePrematureCycle(assign, gifter, recipient, minCycleLen) {
+					continue
+				}
+				assign[gifter] = recipient
+				usedRecipient[recipient] = true
+				if backtrack(gifter + 1) {
+					return true
+				}
+				assign[gifter] = -1
+				usedRecipient[recipient] = false
+			}
+			return false
 		}
-		return false
-	}
 
-	if backtrack(0) {
-		return assign, true
+		if backtrack(0) {
+			return assign, true
+		}
+		return nil, false
 	}
-	return nil, false
 }
 
-// collectSolutions attempts to find up to max distinct valid assignments where
-// every cycle has length >= minCycleLen. Stops early after 5 consecutive
-// duplicate solutions (solution space near-exhausted).
+// collectSolutions attempts to find up to max distinct valid assignments using
+// solver. Stops early after collisionThreshold consecutive duplicate solutions
+// (solution space near-exhausted).
 //
-// Returns nil if the target minCycleLen is infeasible for this graph.
-func collectSolutions(ctx context.Context, g *graph, minCycleLen int, seed int64, max int) []Solution {
+// Returns nil if the solver reports the target is infeasible for this graph.
+func collectSolutions(ctx context.Context, solver solverFunc, g *graph, seed int64, max int) []Solution {
 	const collisionThreshold = 5
 
 	seen := make(map[string]bool)
@@ -252,13 +278,7 @@ func collectSolutions(ctx context.Context, g *graph, minCycleLen int, seed int64
 		attemptSeed := masterRNG.Int63()
 		rng := rand.New(rand.NewSource(attemptSeed))
 
-		var assign []int
-		var ok bool
-		if minCycleLen == g.n {
-			assign, ok = hamiltonianDFS(g, rng)
-		} else {
-			assign, ok = constrainedBacktrack(g, rng, minCycleLen)
-		}
+		assign, ok := solver(ctx, g, rng)
 		if !ok {
 			// This target is infeasible for this graph — signal via empty results.
 			return nil

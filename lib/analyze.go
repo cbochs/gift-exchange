@@ -5,6 +5,7 @@ import (
 	"math/rand"
 )
 
+
 // Analyze returns graph statistics for the given problem, including whether
 // a Hamiltonian cycle is possible. The Hamiltonian check runs a full DFS and
 // may be slow for large, heavily-constrained graphs; cancel ctx to abort it.
@@ -25,25 +26,19 @@ func Analyze(ctx context.Context, p Problem) (GraphInfo, error) {
 		density = float64(edgeCount) / float64(maxEdgeCount)
 	}
 
-	// Run the Hamiltonian DFS in a goroutine so context cancellation is respected.
-	type dfsResult struct{ ok bool }
-	ch := make(chan dfsResult, 1)
-	go func() {
-		rng := rand.New(rand.NewSource(0))
-		_, ok := hamiltonianDFS(g, rng)
-		ch <- dfsResult{ok}
-	}()
-
-	select {
-	case r := <-ch:
-		return GraphInfo{
-			ParticipantCount:    n,
-			EdgeCount:           edgeCount,
-			MaxEdgeCount:        maxEdgeCount,
-			Density:             density,
-			HamiltonianPossible: r.ok,
-		}, nil
-	case <-ctx.Done():
+	// hamiltonianSolver checks ctx internally (every 256 calls), so calling it
+	// directly is sufficient — no goroutine needed.
+	rng := rand.New(rand.NewSource(0))
+	_, hamiltonian := hamiltonianSolver(ctx, g, rng)
+	if ctx.Err() != nil {
 		return GraphInfo{}, ctx.Err()
 	}
+
+	return GraphInfo{
+		ParticipantCount:    n,
+		EdgeCount:           edgeCount,
+		MaxEdgeCount:        maxEdgeCount,
+		Density:             density,
+		HamiltonianPossible: hamiltonian,
+	}, nil
 }
