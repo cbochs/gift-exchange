@@ -11,7 +11,7 @@ type GiftExchange {
     platform: String! = "",
   ): Container! {
     let source = self.ws.directory("")
-    let binary = go.build(source, "./server", platform: platform)
+    let binary = go.build(source, "./cmd/server", platform: platform)
 
     container(platform: platform).
       withFile("gift-exchange", binary, permissions: 493).

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -11,16 +11,7 @@ import (
 	ge "github.com/cbochs/gift-exchange/lib"
 )
 
-type handler struct{}
-
-func newHandler() *handler { return &handler{} }
-
-func (h *handler) solveHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func solveHandler(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "application/json") {
 		writeError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
@@ -57,7 +48,7 @@ func (h *handler) solveHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *handler) healthHandler(w http.ResponseWriter, r *http.Request) {
+func healthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

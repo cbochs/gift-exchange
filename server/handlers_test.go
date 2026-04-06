@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -18,23 +18,21 @@ import (
 
 func testSolve(t *testing.T, body string) (*http.Response, []byte) {
 	t.Helper()
-	h := newHandler()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/solve", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	h.solveHandler(rec, req)
+	solveHandler(rec, req)
 	return rec.Result(), rec.Body.Bytes()
 }
 
 func testSolveRaw(t *testing.T, body string, contentType string) (*http.Response, []byte) {
 	t.Helper()
-	h := newHandler()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/solve", strings.NewReader(body))
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	h.solveHandler(rec, req)
+	solveHandler(rec, req)
 	return rec.Result(), rec.Body.Bytes()
 }
 
@@ -185,10 +183,9 @@ func TestSolveHandler_BodyTooLarge(t *testing.T) {
 }
 
 func TestHealthHandler(t *testing.T) {
-	h := newHandler()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
-	h.healthHandler(rec, req)
+	healthHandler(rec, req)
 
 	resp := rec.Result()
 	if resp.StatusCode != http.StatusOK {

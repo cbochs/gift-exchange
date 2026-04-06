@@ -1,4 +1,4 @@
-package main
+package server
 
 import "github.com/cbochs/gift-exchange/internal/dto"
 
