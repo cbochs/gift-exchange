@@ -1,12 +1,17 @@
 # Phase 10 — State Persistence & Link Sharing
 
-## Status
+## Status — COMPLETE
 
 - [x] **P1** — LocalStorage save/load (input state only)
 - [x] **P2** — Reset button (clears state + localStorage)
 - [x] **P3** — Compact URL encoding helpers (`encodeStateToHash` / `decodeStateFromHash`)
 - [x] **P4** — On-load hash detection and application
 - [x] **P5** — "Copy Link" button + shared-link banner
+
+**Post-implementation fixes:**
+- Hash cleared from URL immediately after apply (prevents stale hash re-applying on reload)
+- Banner suppressed when decoded hash has no participants (empty-state copy-link edge case)
+- Banner CSS changed to `.hash-banner:not([hidden])` — `display:flex` was overriding the `hidden` attribute, making the banner always visible and the dismiss button non-functional
 
 ---
 

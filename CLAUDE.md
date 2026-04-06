@@ -39,7 +39,7 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 8 (all R1–R12). Key changes: `validateStructural`/`checkHall` split (R1); `solverFunc` abstraction + ctx checks every 256 calls (R2); `ErrInvalid` sentinel (R3); `internal/dto` package with roundtrip tests (R4); `server/` → `package server`, entrypoint at `cmd/server/main.go` (R5); exported lib constants `DefaultMaxSolutions`/`NewSeed()`, server constants exported (R6); seed resolution centralized to `ge.NewSeed()` in callers, removed from `lib/Solve` (R7); `http.Server` transport timeouts `ReadTimeout`/`WriteTimeout`/`IdleTimeout` (R8); Go 1.22 method-based mux routing (R9); `slices.SortFunc`/`strconv.Itoa` (R10); Dagger: `go vet`, `go test -race`, `-trimpath -ldflags="-s -w"`, output renamed `gift-exchange`, `Test`/`Vet` functions added (R11); `FuzzSolve` in `lib/solver_test.go` (R12). Required Assignments moved to future work.
+**Last session**: Completed Phase 10 (P1–P5). LocalStorage save/load on every input mutation; Reset button clears state + storage + hash; compact `#v1:<base64url>` URL encoding with integer indices (`encodeStateToHash`/`decodeStateFromHash`); on-load hash detection with URL-priority over localStorage; hash cleared from URL after apply; "Copy Link" button with clipboard feedback; shared-link banner (full-width, auto-dismiss, `:not([hidden])` CSS fix).
 **Next action**: See `plans/phase9-required.md` for the future Required Assignments feature when ready to resume.
 
 ---
@@ -79,7 +79,7 @@ gift-exchange/
 │   ├── main.go                ← Config, NewServer, exported constants
 │   ├── static.go              ← go:embed web
 │   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
-│   └── web/                   ← embedded frontend assets
+│   └── web/                   ← embedded frontend assets (LocalStorage, URL link sharing)
 ├── dagger.json                ← Dagger module root; declares "go" local dependency
 ├── .dagger/                   ← COMPLETE — Dagger build pipeline (Dang SDK)
 │   ├── config.toml
