@@ -1,12 +1,7 @@
 type GiftExchange {
-  let ws: Workspace!
+  let defaultPlat = toString(defaultPlatform).trim("\"")
 
-  """
-  Run go vet and go test -race against the source tree.
-  """
-  pub Test(): String! {
-    go.test(self.ws.directory(""))
-  }
+  let ws: Workspace!
 
   """
   Build the gift-exchange server container.
@@ -17,12 +12,30 @@ type GiftExchange {
     """
     platform: String! = "",
   ): Container! {
+    if (platform == "") {
+      platform = defaultPlat
+    }
+
     let source = self.ws.directory("")
     let binary = go.build(source, "./cmd/server", platform: platform)
 
     container(platform: platform).
       withFile("gift-exchange", binary, permissions: 493).
       withEntrypoint(["./gift-exchange"])
+  }
+
+  """
+  Run gift-exchange tests.
+  """
+  pub Test(): Container! @check {
+    go.test(self.ws.directory("", include: ["**/*.go", "**/go.mod", "**/go.sum", "server/web/"]))
+  }
+
+  """
+  Run gift-exchange vet checks.
+  """
+  pub Vet(): Container! @check {
+    go.vet(self.ws.directory("", include: ["**/*.go", "**/go.mod", "**/go.sum"]))
   }
 
   """

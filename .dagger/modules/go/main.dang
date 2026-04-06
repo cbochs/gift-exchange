@@ -1,5 +1,6 @@
 type Go {
   let defaultImage = "golang:1.26@sha256:595c7847cff97c9a9e76f015083c481d26078f961c9c8dca3923132f51fe12f1"
+  let defaultPlat = toString(defaultPlatform).trim("\"")
 
   pub Build(
     """
@@ -17,15 +18,11 @@ type Go {
     """
     platform: String! = "",
   ): File! {
-    platform = platform ?? toString(defaultPlatform)
-    let goos = case (platform) {
-      "linux/amd64" => "linux"
-      "linux/arm64" => "linux"
+    if (platform == "") {
+      platform = defaultPlat
     }
-    let goarch = case (platform) {
-    "linux/amd64" => "amd64"
-    "linux/arm64" => "arm64"
-    }
+    let goos = platform.split("/")[0] :: String!
+    let goarch = platform.split("/")[1] :: String!
 
     container.
       from(defaultImage).
@@ -34,26 +31,41 @@ type Go {
       withEnvVariable("CGO_ENABLED", "0").
       withMountedDirectory("/work", source).
       withWorkdir("/work").
-      withExec(["go", "build", "-trimpath", "-ldflags=-s -w", "-o", "gift-exchange", pkg]).
-      file("gift-exchange")
+      withExec(["go", "build", "-trimpath", "-ldflags=-s -w", "-o", "binary", pkg]).
+      file("binary")
   }
 
   """
-  Run go vet and go test -race against the source tree.
+  Run go test -race against the source tree.
   """
   pub Test(
     """
     Source Go directory.
     """
     source: Directory!,
-  ): String! {
+  ): Container! {
     container.
       from(defaultImage).
       withEnvVariable("CGO_ENABLED", "1").
       withMountedDirectory("/work", source).
       withWorkdir("/work").
-      withExec(["go", "vet", "./..."]).
-      withExec(["go", "test", "-race", "./..."]).
-      stdout
+      withExec(["go", "test", "-race", "./..."])
+  }
+
+  """
+  Run go vet against the source tree.
+  """
+  pub Vet(
+    """
+    Source Go directory.
+    """
+    source: Directory!,
+  ): Container! {
+    container.
+      from(defaultImage).
+      withEnvVariable("CGO_ENABLED", "1").
+      withMountedDirectory("/work", source).
+      withWorkdir("/work").
+      withExec(["go", "vet", "./..."])
   }
 }
