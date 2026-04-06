@@ -26,7 +26,7 @@ func (h *handler) solveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 
 	var req SolveRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -94,12 +94,12 @@ func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
 
 	maxSolutions := req.Options.MaxSolutions
 	if maxSolutions <= 0 {
-		maxSolutions = 5
+		maxSolutions = ge.DefaultMaxSolutions
 	}
 
 	timeout := time.Duration(req.Options.TimeoutMs) * time.Millisecond
 	if timeout <= 0 {
-		timeout = 10 * time.Second
+		timeout = defaultTimeout
 	}
 
 	return ge.Problem{

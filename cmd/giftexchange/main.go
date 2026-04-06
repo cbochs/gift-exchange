@@ -50,7 +50,7 @@ type inputOptions struct {
 func (o inputOptions) toLibOptions() ge.Options {
 	n := o.MaxSolutions
 	if n <= 0 {
-		n = 5
+		n = ge.DefaultMaxSolutions
 	}
 	return ge.Options{
 		MaxSolutions: n,

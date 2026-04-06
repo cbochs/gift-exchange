@@ -16,7 +16,7 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 	}
 
 	if opts.MaxSolutions <= 0 {
-		opts.MaxSolutions = 5
+		opts.MaxSolutions = DefaultMaxSolutions
 	}
 
 	seed := opts.Seed

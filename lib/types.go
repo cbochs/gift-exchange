@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// DefaultMaxSolutions is the number of solutions Solve returns when
+// Options.MaxSolutions is zero.
+const DefaultMaxSolutions = 5
+
+// NewSeed returns a non-deterministic seed suitable for Options.Seed.
+func NewSeed() int64 { return time.Now().UnixNano() }
+
 // ErrInvalid is returned when the Problem definition is structurally malformed:
 // too few participants, duplicate IDs, or constraint references to unknown IDs.
 // It is distinct from ErrInfeasible: an invalid problem has a definition error;

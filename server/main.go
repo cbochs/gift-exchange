@@ -9,6 +9,20 @@ import (
 	"time"
 )
 
+const (
+	defaultAddr       = ":8080"
+	defaultCORSOrigin = "*"
+	defaultTimeout    = 15 * time.Second
+
+	// http.Server transport layer limits.
+	readTimeout        = 5 * time.Second
+	writeTimeoutBuffer = 5 * time.Second // added to solver timeout for WriteTimeout
+	idleTimeout        = 60 * time.Second
+
+	// maxRequestBodyBytes caps incoming request bodies at 1 MB.
+	maxRequestBodyBytes = 1 << 20
+)
+
 type serverConfig struct {
 	addr       string
 	corsOrigin string
@@ -47,23 +61,26 @@ func envOrDefault(key, fallback string) string {
 
 func main() {
 	var cfg serverConfig
-	flag.StringVar(&cfg.addr, "addr", envOrDefault("ADDR", ":8080"), "listen address")
-	flag.StringVar(&cfg.corsOrigin, "cors-origin", envOrDefault("CORS_ORIGIN", "*"), "allowed CORS origin")
+	flag.StringVar(&cfg.addr, "addr", envOrDefault("ADDR", defaultAddr), "listen address")
+	flag.StringVar(&cfg.corsOrigin, "cors-origin", envOrDefault("CORS_ORIGIN", defaultCORSOrigin), "allowed CORS origin")
 	flag.StringVar(&cfg.staticDir, "static", envOrDefault("STATIC", ""), "directory to serve static frontend files (default: embedded)")
 
-	timeoutStr := envOrDefault("TIMEOUT", "15s")
-	defaultTimeout, err := time.ParseDuration(timeoutStr)
+	timeoutStr := envOrDefault("TIMEOUT", defaultTimeout.String())
+	parsedTimeout, err := time.ParseDuration(timeoutStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "invalid GIFT_EXCHANGE_TIMEOUT %q: %v\n", timeoutStr, err)
 		os.Exit(1)
 	}
-	flag.DurationVar(&cfg.timeout, "timeout", defaultTimeout, "request timeout")
+	flag.DurationVar(&cfg.timeout, "timeout", parsedTimeout, "request timeout")
 
 	flag.Parse()
 
 	srv := &http.Server{
-		Addr:    cfg.addr,
-		Handler: newServer(cfg),
+		Addr:         cfg.addr,
+		Handler:      newServer(cfg),
+		ReadTimeout:  readTimeout,
+		WriteTimeout: cfg.timeout + writeTimeoutBuffer,
+		IdleTimeout:  idleTimeout,
 	}
 
 	fmt.Fprintf(os.Stderr, "listening on %s\n", cfg.addr)
