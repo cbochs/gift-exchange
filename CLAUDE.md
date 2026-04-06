@@ -38,9 +38,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 8 — Required Assignments.
-**Last session**: Completed Phase 7. Moved `web/` to `server/web/`; added `go:embed` (`server/static.go`); server now serves embedded assets by default and reads config from `GIFT_EXCHANGE_*` env vars with flag override. Build and publish via Dagger (Dang SDK): `Container`/`Serve`/`Publish` functions in `.dagger/main.dang`; multi-arch (amd64 + arm64) publish to `ghcr.io/cbochs/gift-exchange`. Dockerfile and helm chart were drafted then removed in favor of Dagger.
-**Next action**: Phase 8 — read phase8-required.md plan before starting.
+**Active phase**: Phase 8 — Refactoring & Code Quality.
+**Last session**: Completed Phase 7. Drafted Phase 8 refactoring plan (`plans/phase8-refactor.md`) covering solver abstraction, shared internal DTOs, project layout (`cmd/server/`), error sentinels, constants, context cancellation, and test hardening. Required assignments moved to Phase 9.
+**Next action**: Phase 8 — read `plans/phase8-refactor.md` before starting. Work through R1–R12 in the order specified at the bottom of that document.
 
 ---
 
@@ -88,7 +88,8 @@ gift-exchange/
 │   ├── phase5-web-frontend.md ← COMPLETE
 │   ├── phase6-polish.md       ← COMPLETE
 │   ├── phase7-deployment.md   ← COMPLETE
-│   └── phase8-required.md     ← PLANNED — required assignments (full-stack)
+│   ├── phase8-refactor.md     ← PLANNED — refactoring & code quality (R1–R12)
+│   └── phase9-required.md     ← PLANNED — required assignments (full-stack)
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
     ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete

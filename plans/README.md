@@ -9,7 +9,8 @@
 - [x] **Phase 5 — Web Frontend**: Complete. Vanilla JS/D3 two-panel UI; force-directed graph; solution tabs; JSON import/export.
 - [x] **Phase 6 — UI Polish**: Bug fixes (solution display, collapsible sections), symmetric relationships, "Add as history blocks", mobile layout.
 - [x] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
-- [ ] **Phase 8 — Required Assignments**: Full-stack feature: force specific gifter→recipient pairs in every solution.
+- [ ] **Phase 8 — Refactoring & Code Quality**: Structural improvements before feature work: solver abstraction, shared DTOs, project layout, error types, constants, context cancellation.
+- [ ] **Phase 9 — Required Assignments**: Full-stack feature: force specific gifter→recipient pairs in every solution.
 
 ---
 
@@ -110,7 +111,8 @@ Full schema defined in `server/api.go` and detailed in Phase 4.
 | 5     | Web Frontend        | Build the presentation layer with graph visualization       |
 | 6     | UI Polish           | Bug fixes, symmetric relationships, history blocks, mobile layout |
 | 7     | Deployment          | Containerize and deploy to Kubernetes via Helm behind Forward Auth |
-| 8     | Required Assignments | Force specific gifter→recipient pairs in every solution    |
+| 8     | Refactoring         | Solver abstraction, shared DTOs, project layout, error types, constants |
+| 9     | Required Assignments | Force specific gifter→recipient pairs in every solution   |
 
 Each phase builds on the previous. Phases 3 and 4 can overlap once the library API stabilizes.
 
