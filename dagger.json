@@ -1,0 +1,14 @@
+{
+  "name": "gift-exchange",
+  "engineVersion": "v0.20.3",
+  "sdk": {
+    "source": "dang"
+  },
+  "dependencies": [
+    {
+      "name": "go",
+      "source": ".dagger/modules/go"
+    }
+  ],
+  "source": ".dagger"
+}

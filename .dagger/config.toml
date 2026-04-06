@@ -1,0 +1,2 @@
+[modules]
+go = "modules/go"
