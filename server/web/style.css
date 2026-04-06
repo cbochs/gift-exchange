@@ -407,7 +407,7 @@ button:hover { background: var(--bg); }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 7px 16px;
   background: #eff6ff;
   border-bottom: 1px solid #bfdbfe;
   font-size: 12px;

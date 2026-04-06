@@ -875,9 +875,10 @@ document.addEventListener("DOMContentLoaded", () => {
   initGraph();
   wireEvents();
 
-  // Priority: URL hash > localStorage > empty state
+  // Priority: URL hash > localStorage > empty state.
+  // Only treat a hash as a shared link if it carries at least one participant.
   const hashState = decodeStateFromHash(location.hash);
-  if (hashState) {
+  if (hashState?.participants.length) {
     applyImport(hashState, state);
     showHashBanner();
   } else {
