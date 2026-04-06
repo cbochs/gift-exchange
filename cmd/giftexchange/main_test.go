@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	ge "github.com/cbochs/gift-exchange/lib"
+	"github.com/cbochs/gift-exchange/internal/dto"
 )
 
 // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ func TestCLI_Solve_JSON(t *testing.T) {
 		t.Fatalf("expected exit 0, got %d", code)
 	}
 	var resp struct {
-		Solutions []ge.Solution `json:"solutions"`
+		Solutions []dto.SolutionDTO `json:"solutions"`
 		Feasible  bool          `json:"feasible"`
 	}
 	if err := json.Unmarshal([]byte(out), &resp); err != nil {
@@ -224,7 +224,7 @@ func TestCLI_RoundTrip(t *testing.T) {
 
 	// Both outputs must be valid JSON with the same number of solutions.
 	var r1, r2 struct {
-		Solutions []ge.Solution `json:"solutions"`
+		Solutions []dto.SolutionDTO `json:"solutions"`
 	}
 	if err := json.Unmarshal([]byte(out1), &r1); err != nil {
 		t.Fatalf("first output invalid JSON: %v", err)

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cbochs/gift-exchange/internal/dto"
 	ge "github.com/cbochs/gift-exchange/lib"
 )
 
@@ -62,18 +63,18 @@ func (o inputOptions) toLibOptions() ge.Options {
 // On output, Solutions and Feasible are populated; they are silently ignored
 // on re-read, making the output a valid input for a subsequent run.
 type inputDoc struct {
-	Participants []ge.Participant `json:"participants"`
-	Blocks       []ge.Block       `json:"blocks,omitempty"`
-	Options      inputOptions     `json:"options"`
+	Participants []dto.ParticipantDTO `json:"participants"`
+	Blocks       []dto.BlockDTO       `json:"blocks,omitempty"`
+	Options      inputOptions         `json:"options"`
 	// Round-trip fields (written on output, ignored when re-used as input).
-	Solutions []ge.Solution `json:"solutions,omitempty"`
-	Feasible  *bool         `json:"feasible,omitempty"`
+	Solutions []dto.SolutionDTO `json:"solutions,omitempty"`
+	Feasible  *bool             `json:"feasible,omitempty"`
 }
 
 func (d *inputDoc) problem() ge.Problem {
 	return ge.Problem{
-		Participants: d.Participants,
-		Blocks:       d.Blocks,
+		Participants: dto.ParticipantsToLib(d.Participants),
+		Blocks:       dto.BlocksToLib(d.Blocks),
 	}
 }
 
@@ -227,7 +228,7 @@ func cmdAnalyze(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func writeJSONOutput(stdout, stderr io.Writer, doc *inputDoc, solutions []ge.Solution) int {
 	feasible := true
-	doc.Solutions = solutions
+	doc.Solutions = dto.SolutionsFromLib(solutions)
 	doc.Feasible = &feasible
 	enc := json.NewEncoder(stdout)
 	enc.SetIndent("", "  ")

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cbochs/gift-exchange/internal/dto"
 	ge "github.com/cbochs/gift-exchange/lib"
 )
 
@@ -50,7 +51,7 @@ func (h *handler) solveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, SolveResponse{
-		Solutions: solutionsToDTOs(solutions),
+		Solutions: dto.SolutionsFromLib(solutions),
 		Feasible:  true,
 		SeedUsed:  seed,
 	})
@@ -77,19 +78,9 @@ func corsMiddleware(origin string, next http.Handler) http.Handler {
 // dtoToProblem maps the request DTO to library types and resolves option defaults.
 // Returns the problem, solver options, and the concrete seed used (for echoing back).
 func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
-	participants := make([]ge.Participant, len(req.Participants))
-	for i, p := range req.Participants {
-		participants[i] = ge.Participant{ID: p.ID, Name: p.Name}
-	}
-
-	blocks := make([]ge.Block, len(req.Blocks))
-	for i, b := range req.Blocks {
-		blocks[i] = ge.Block{From: b.From, To: b.To}
-	}
-
 	seed := req.Options.Seed
 	if seed == 0 {
-		seed = time.Now().UnixNano()
+		seed = ge.NewSeed()
 	}
 
 	maxSolutions := req.Options.MaxSolutions
@@ -103,38 +94,13 @@ func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
 	}
 
 	return ge.Problem{
-		Participants: participants,
-		Blocks:       blocks,
+		Participants: dto.ParticipantsToLib(req.Participants),
+		Blocks:       dto.BlocksToLib(req.Blocks),
 	}, ge.Options{
 		MaxSolutions: maxSolutions,
 		Seed:         seed,
 		Timeout:      timeout,
 	}, seed
-}
-
-// solutionsToDTOs converts library solutions to response DTOs.
-func solutionsToDTOs(solutions []ge.Solution) []SolutionDTO {
-	dtos := make([]SolutionDTO, len(solutions))
-	for i, s := range solutions {
-		assignments := make([]AssignmentDTO, len(s.Assignments))
-		for j, a := range s.Assignments {
-			assignments[j] = AssignmentDTO{GifterID: a.GifterID, RecipientID: a.RecipientID}
-		}
-		cycles := make([][]string, len(s.Cycles))
-		for j, c := range s.Cycles {
-			cycles[j] = []string(c)
-		}
-		dtos[i] = SolutionDTO{
-			Assignments: assignments,
-			Cycles:      cycles,
-			Score: ScoreDTO{
-				MinCycleLen: s.Score.MinCycleLen,
-				NumCycles:   s.Score.NumCycles,
-				MaxCycleLen: s.Score.MaxCycleLen,
-			},
-		}
-	}
-	return dtos
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

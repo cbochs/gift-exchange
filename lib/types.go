@@ -23,16 +23,19 @@ var ErrInvalid = errors.New("invalid problem")
 // Hall's condition violated).
 var ErrInfeasible = errors.New("no valid gift exchange is possible under the given constraints")
 
+// Participant is a person in the gift exchange.
 type Participant struct {
-	ID   string `json:"id"`   // unique identifier (used in blocks and output)
-	Name string `json:"name"` // display name
+	ID   string // unique identifier (used in blocks and output)
+	Name string // display name
 }
 
+// Block is a directed constraint: From cannot give to To.
 type Block struct {
-	From string `json:"from"` // this participant cannot give...
-	To   string `json:"to"`   // ...to this participant (directed constraint)
+	From string // this participant cannot give...
+	To   string // ...to this participant (directed constraint)
 }
 
+// Problem is the input to Solve and Validate.
 type Problem struct {
 	Participants []Participant
 	Blocks       []Block
@@ -40,37 +43,42 @@ type Problem struct {
 	// cycle structure via the N/M progression (N, N/2, N/3, ...).
 }
 
+// Options controls solver behavior.
 type Options struct {
-	MaxSolutions int           // max solutions to return (default: 5)
-	Seed         int64         // RNG seed; 0 = random (non-reproducible)
+	MaxSolutions int           // max solutions to return (default: DefaultMaxSolutions)
+	Seed         int64         // RNG seed; use NewSeed() for a random seed
 	Timeout      time.Duration // max solver wall time; 0 = no limit
 }
 
+// Assignment is one gifter→recipient pair.
 type Assignment struct {
-	GifterID    string `json:"gifter_id"`
-	RecipientID string `json:"recipient_id"`
+	GifterID    string
+	RecipientID string
 }
 
-type Cycle []string // participant IDs in order: Cycle[0]→Cycle[1]→...→Cycle[0]
+// Cycle is a sequence of participant IDs: Cycle[0]→Cycle[1]→...→Cycle[0].
+type Cycle []string
 
+// Score captures solution quality metrics used for ranking.
 type Score struct {
-	MinCycleLen int `json:"min_cycle_len"` // primary ranking: maximize
-	NumCycles   int `json:"num_cycles"`    // secondary ranking: minimize
-	MaxCycleLen int `json:"max_cycle_len"` // tertiary ranking: maximize
+	MinCycleLen int // primary ranking: maximize
+	NumCycles   int // secondary ranking: minimize
+	MaxCycleLen int // tertiary ranking: maximize
 }
 
+// Solution is one valid gift exchange assignment with its cycle decomposition.
 type Solution struct {
-	Assignments []Assignment `json:"assignments"`
-	Cycles      []Cycle      `json:"cycles"`
-	Score       Score        `json:"score"`
+	Assignments []Assignment
+	Cycles      []Cycle
+	Score       Score
 }
 
 // GraphInfo contains statistics about the gift exchange constraint graph,
 // returned by Analyze.
 type GraphInfo struct {
-	ParticipantCount    int     `json:"participant_count"`
-	EdgeCount           int     `json:"edge_count"`
-	MaxEdgeCount        int     `json:"max_edge_count"` // n*(n-1), fully-connected directed graph
-	Density             float64 `json:"density"`        // EdgeCount / MaxEdgeCount
-	HamiltonianPossible bool    `json:"hamiltonian_possible"`
+	ParticipantCount    int
+	EdgeCount           int
+	MaxEdgeCount        int     // n*(n-1), fully-connected directed graph
+	Density             float64 // EdgeCount / MaxEdgeCount
+	HamiltonianPossible bool
 }

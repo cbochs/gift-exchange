@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/cbochs/gift-exchange/internal/dto"
 )
 
 // ---------------------------------------------------------------------------
@@ -210,11 +212,11 @@ func TestSolveHandler_PropertyValid(t *testing.T) {
 
 	for trial := range 20 {
 		n := rng.Intn(10) + 4 // 4..13 participants
-		participants := make([]ParticipantDTO, n)
+		participants := make([]dto.ParticipantDTO, n)
 		ids := make([]string, n)
 		for i := range n {
 			id := fmt.Sprintf("p%d", i)
-			participants[i] = ParticipantDTO{ID: id, Name: fmt.Sprintf("Person %d", i)}
+			participants[i] = dto.ParticipantDTO{ID: id, Name: fmt.Sprintf("Person %d", i)}
 			ids[i] = id
 		}
 
