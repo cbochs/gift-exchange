@@ -5,7 +5,7 @@
 :root {
   --header-h: 46px;
   --sidebar-w: 272px;
-  --solutions-h: 210px;
+  --solutions-h: 230px;
 
   --bg:        #f3f4f6;
   --surface:   #ffffff;
@@ -247,11 +247,16 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 
 #solutions-header {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+
+.solutions-top-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px 0;
-  flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
 .solutions-label {
@@ -260,7 +265,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
-  flex-shrink: 0;
+  flex: 1;
 }
 
 #solution-tabs {
