@@ -9,7 +9,7 @@
 - [x] **Phase 5 — Web Frontend**: Complete. Vanilla JS/D3 two-panel UI; force-directed graph; solution tabs; JSON import/export.
 - [x] **Phase 6 — UI Polish**: Bug fixes (solution display, collapsible sections), symmetric relationships, "Add as history blocks", mobile layout.
 - [x] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
-- [ ] **Phase 8 — Refactoring & Code Quality**: Structural improvements before feature work: solver abstraction, shared DTOs, project layout, error types, constants, context cancellation.
+- [x] **Phase 8 — Refactoring & Code Quality**: Structural improvements before feature work: solver abstraction, shared DTOs, project layout, error types, constants, context cancellation.
 - [ ] **Phase 9 — Required Assignments**: Full-stack feature: force specific gifter→recipient pairs in every solution.
 
 ---

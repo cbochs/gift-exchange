@@ -1,19 +1,19 @@
-# Phase 9 — Refactoring & Code Quality
+# Phase 8 — Refactoring & Code Quality
 
 ## Status
 
-- [ ] **R1** — eliminate double graph construction in `validate()` + `Solve()`
-- [ ] **R2** — solver abstraction (`solverFunc`) + context cancellation
-- [ ] **R3** — define `ErrInvalid` sentinel; remove `isValidationErr` negative check
-- [ ] **R4** — `internal/dto`: shared wire types + lib mappings with tests
-- [ ] **R5** — move server entrypoint to `cmd/server/`; `server/` becomes `package server`
-- [ ] **R6** — define and export lib constants; pull infrastructure constants to one site
-- [ ] **R7** — centralize seed resolution (three independent sites today)
-- [ ] **R8** — add `http.Server` transport timeouts (slow-loris defense)
-- [ ] **R9** — adopt Go 1.22 method-based mux routing; drop empty `handler` struct
-- [ ] **R10** — standardize slice APIs (`sort.Slice` → `slices.SortFunc`, etc.)
-- [ ] **R11** — Dagger pipeline: `go vet`, `go test -race`, `-ldflags="-s -w" -trimpath`
-- [ ] **R12** — fuzz test `Solve`
+- [x] **R1** — eliminate double graph construction in `validate()` + `Solve()`
+- [x] **R2** — solver abstraction (`solverFunc`) + context cancellation
+- [x] **R3** — define `ErrInvalid` sentinel; remove `isValidationErr` negative check
+- [x] **R4** — `internal/dto`: shared wire types + lib mappings with tests
+- [x] **R5** — move server entrypoint to `cmd/server/`; `server/` becomes `package server`
+- [x] **R6** — define and export lib constants; pull infrastructure constants to one site
+- [x] **R7** — centralize seed resolution (three independent sites today)
+- [x] **R8** — add `http.Server` transport timeouts (slow-loris defense)
+- [x] **R9** — adopt Go 1.22 method-based mux routing; drop empty `handler` struct
+- [x] **R10** — standardize slice APIs (`sort.Slice` → `slices.SortFunc`, etc.)
+- [x] **R11** — Dagger pipeline: `go vet`, `go test -race`, `-ldflags="-s -w" -trimpath`
+- [x] **R12** — fuzz test `Solve`
 
 ---
 

@@ -38,9 +38,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: Phase 8 — Refactoring & Code Quality.
-**Last session**: Completed Phase 7. Drafted Phase 8 refactoring plan (`plans/phase8-refactor.md`) covering solver abstraction, shared internal DTOs, project layout (`cmd/server/`), error sentinels, constants, context cancellation, and test hardening. Required assignments moved to Phase 9.
-**Next action**: Phase 8 — read `plans/phase8-refactor.md` before starting. Work through R1–R12 in the order specified at the bottom of that document.
+**Active phase**: Phase 9 — Required Assignments.
+**Last session**: Completed Phase 8 (all R1–R12). Key changes: `validateStructural`/`checkHall` split (R1); `solverFunc` abstraction + ctx checks every 256 calls (R2); `ErrInvalid` sentinel (R3); `internal/dto` package with roundtrip tests (R4); `server/` → `package server`, entrypoint at `cmd/server/main.go` (R5); exported lib constants `DefaultMaxSolutions`/`NewSeed()`, server constants exported (R6); seed resolution centralized to `ge.NewSeed()` in callers, removed from `lib/Solve` (R7); `http.Server` transport timeouts `ReadTimeout`/`WriteTimeout`/`IdleTimeout` (R8); Go 1.22 method-based mux routing (R9); `slices.SortFunc`/`strconv.Itoa` (R10); Dagger: `go vet`, `go test -race`, `-trimpath -ldflags="-s -w"`, output renamed `gift-exchange`, `Test` function added (R11); `FuzzSolve` in `lib/solver_test.go` (R12).
+**Next action**: Phase 9 — read `plans/phase9-required.md` before starting.
 
 ---
 
@@ -56,29 +56,36 @@ gift-exchange/
 ├── relationships.json         ← sample data: relationship blocks
 ├── history.json               ← sample data: 10 years of historical pairings
 ├── lib/                       ← COMPLETE — core solver library (stdlib only)
-│   ├── types.go               ← public types + ErrInfeasible
+│   ├── types.go               ← public types + ErrInvalid + ErrInfeasible + DefaultMaxSolutions + NewSeed
 │   ├── graph.go               ← buildGraph, isEdge, shuffled
 │   ├── score.go               ← decomposeCycles, canonicalize, scoreOf, Score.Better
 │   ├── analyze.go             ← Analyze (exported) — graph stats + Hamiltonian check
-│   ├── solver.go              ← Validate (exported), hamiltonianDFS, constrainedBacktrack, Solve
-│   └── solver_test.go         ← unit + integration + property tests (all passing)
+│   ├── solver.go              ← Validate, validateStructural, checkHall, solverFunc, hamiltonianSolver, constrainedSolver, Solve
+│   └── solver_test.go         ← unit + integration + property + fuzz tests (all passing)
+├── internal/
+│   └── dto/                   ← COMPLETE — shared wire types; imported by CLI and server
+│       ├── types.go           ← ParticipantDTO, BlockDTO, AssignmentDTO, ScoreDTO, SolutionDTO
+│       ├── mapping.go         ← ParticipantsToLib/FromLib, BlocksToLib/FromLib, SolutionsFromLib
+│       └── mapping_test.go    ← roundtrip and conversion tests
 ├── cmd/
-│   └── giftexchange/          ← COMPLETE — CLI thin wrapper around lib
-│       ├── main.go            ← run(args, stdin, stdout, stderr); solve/validate/analyze subcommands
-│       └── main_test.go       ← integration tests (all passing)
-├── server/                    ← COMPLETE — HTTP server (package main)
-│   ├── api.go                 ← DTO types: SolveRequest, SolveResponse, ErrorResponse, etc.
+│   ├── giftexchange/          ← COMPLETE — CLI thin wrapper around lib
+│   │   ├── main.go            ← run(args, stdin, stdout, stderr); solve/validate/analyze subcommands
+│   │   └── main_test.go       ← integration tests (all passing)
+│   └── server/                ← COMPLETE — HTTP server entrypoint
+│       └── main.go            ← flag parsing, env vars, http.Server with transport timeouts
+├── server/                    ← COMPLETE — package server (not main)
+│   ├── api.go                 ← SolveRequest, SolveResponse, ErrorResponse, OptionsDTO
 │   ├── handlers.go            ← solveHandler, healthHandler, corsMiddleware, dtoToProblem
-│   ├── main.go                ← flags + GIFT_EXCHANGE_* env vars; embedded asset serving
+│   ├── main.go                ← Config, NewServer, exported constants
 │   ├── static.go              ← go:embed web
 │   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
-│   └── web/                   ← embedded frontend assets (moved from root web/)
+│   └── web/                   ← embedded frontend assets
 ├── dagger.json                ← Dagger module root; declares "go" local dependency
 ├── .dagger/                   ← COMPLETE — Dagger build pipeline (Dang SDK)
 │   ├── config.toml
-│   ├── main.dang              ← GiftExchange type: Container, Serve, Publish
+│   ├── main.dang              ← GiftExchange type: Test, Container, Serve, Publish
 │   └── modules/go/
-│       └── main.dang          ← Go type: Build (cross-compile, pinned golang:1.26 digest)
+│       └── main.dang          ← Go type: Build (trimpath, ldflags), Test (vet + race)
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
@@ -88,7 +95,7 @@ gift-exchange/
 │   ├── phase5-web-frontend.md ← COMPLETE
 │   ├── phase6-polish.md       ← COMPLETE
 │   ├── phase7-deployment.md   ← COMPLETE
-│   ├── phase8-refactor.md     ← PLANNED — refactoring & code quality (R1–R12)
+│   ├── phase8-refactor.md     ← COMPLETE — refactoring & code quality (R1–R12)
 │   └── phase9-required.md     ← PLANNED — required assignments (full-stack)
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
