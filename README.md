@@ -23,7 +23,8 @@ Start the server and open `http://localhost:8080`:
 go run ./cmd/server/
 ```
 
-> **Note:** Pass `--static server/web/` during development to serve live files without rebuilding.
+> [!NOTE]
+> Pass `--static server/web/` during development to serve live files without rebuilding.
 
 The UI has two panels. The **left panel** is the form: add participants, configure blocks (directed, e.g. history) and relationships (symmetric, e.g. partners/siblings), and click **Generate**. The **right panel** shows results: a force-directed graph of valid pairings with the selected solution highlighted in color, and ranked solution tabs listing each assignment grouped by cycle.
 
