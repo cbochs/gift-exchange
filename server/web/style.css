@@ -403,7 +403,8 @@ button:hover { background: var(--bg); }
 }
 
 /* ─── Hash banner ────────────────────────────────────────────────────────────── */
-.hash-banner {
+/* Use :not([hidden]) so the CSS display value doesn't override the hidden attribute. */
+.hash-banner:not([hidden]) {
   display: flex;
   align-items: center;
   gap: 8px;
