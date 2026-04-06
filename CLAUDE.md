@@ -83,9 +83,9 @@ gift-exchange/
 ├── dagger.json                ← Dagger module root; declares "go" local dependency
 ├── .dagger/                   ← COMPLETE — Dagger build pipeline (Dang SDK)
 │   ├── config.toml
-│   ├── main.dang              ← GiftExchange type: Test, Container, Serve, Publish
+│   ├── main.dang              ← GiftExchange type: Test, Vet, Container, Serve, Publish (@check on Test/Vet)
 │   └── modules/go/
-│       └── main.dang          ← Go type: Build (trimpath, ldflags), Test (vet + race)
+│       └── main.dang          ← Go type: Build (trimpath, ldflags), Test (-race), Vet
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE

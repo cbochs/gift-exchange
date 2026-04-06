@@ -17,104 +17,17 @@ Multiple ranked solutions are returned so organizers can choose.
 
 ## Web UI
 
-Run the server with the frontend:
+Start the server and open `http://localhost:8080`:
 
 ```bash
-# Development (live files, no rebuild):
-go run ./server/ --static server/web/
-
-# Production (embedded assets):
-go run ./server/
+go run ./cmd/server/
 ```
 
-Then open `http://localhost:8080` in a browser.
+> **Note:** Pass `--static server/web/` during development to serve live files without rebuilding.
 
-- Add participants by name; IDs are auto-generated
-- Add **Relationships** (symmetric, e.g. partners/siblings — Alice ↔ Bob blocks both directions at once)
-- Add **Blocks** (directed, e.g. history — Alice → Bob prevents Alice giving to Bob)
-- Click **Generate** to solve and display ranked solutions
-- Solutions show each assignment by name, grouped by cycle with a color-matched indicator
-- The graph shows valid pairings in grey and the selected solution in color — one color per cycle
-- Click solution tabs to switch between ranked results
-- **Add as history blocks** copies the selected solution's assignments into the Blocks list for next year
-- **Download JSON** saves the full problem + solutions; **Import JSON** restores it (cached solutions are displayed immediately with no API call)
-- Works on mobile — sidebar sections are collapsible to save space
+The UI has two panels. The **left panel** is the form: add participants, configure blocks (directed, e.g. history) and relationships (symmetric, e.g. partners/siblings), and click **Generate**. The **right panel** shows results: a force-directed graph of valid pairings with the selected solution highlighted in color, and ranked solution tabs listing each assignment grouped by cycle.
 
----
-
-## CLI
-
-### Installation
-
-```bash
-go install github.com/cbochs/gift-exchange/cmd/giftexchange@latest
-```
-
-Or build from source:
-
-```bash
-go build -o giftexchange ./cmd/giftexchange/
-```
-
-### Input format
-
-All subcommands read a JSON file (or stdin with `-input -`):
-
-```json
-{
-  "participants": [
-    { "id": "alice", "name": "Alice" },
-    { "id": "bob", "name": "Bob" },
-    { "id": "carol", "name": "Carol" },
-    { "id": "dave", "name": "Dave" }
-  ],
-  "blocks": [{ "from": "alice", "to": "bob" }]
-}
-```
-
-`blocks` is optional. Each block prevents a specific directed pairing (alice cannot give to bob, but bob can still give to alice).
-
-### Subcommands
-
-**`solve`** — find ranked gift exchange assignments:
-
-```
-$ giftexchange solve -input problem.json
-
-Seed: 7388176239119299000
-Solutions found: 5
-
-=== Solution 1 ===
-Score: min_cycle=4  cycles=1  max_cycle=4
-Cycles:
-  [1] alice → carol → bob → dave → alice
-...
-```
-
-Flags:
-
-- `-input <file>` — input file, or `-` for stdin
-- `-seed <n>` — fix the random seed for reproducible results
-- `-n <n>` — override the maximum number of solutions to return
-- `-json` — output full JSON (assignments, cycles, scores, seed used)
-
-**`validate`** — check that a problem is well-formed and potentially solvable:
-
-```
-$ giftexchange validate -input problem.json
-Input is valid.
-Participants: 4
-Blocks: 1
-```
-
-**`analyze`** — show graph statistics:
-
-```
-$ giftexchange analyze -input problem.json
-Participants:  4
-Edges:         11 of 12 possible (91.7% density)
-Hamiltonian:   yes
-```
+Use **Add as history blocks** to carry this year's assignments forward as next year's blocks. Use **Download / Import JSON** to save and restore the full problem state — cached solutions are displayed immediately on import with no API call.
 
 ---
 
@@ -123,7 +36,7 @@ Hamiltonian:   yes
 ### Running the server
 
 ```bash
-go run ./server/ [flags]
+go run ./cmd/server/ [flags]
 ```
 
 Flags:
@@ -158,7 +71,7 @@ Request:
 }
 ```
 
-All `options` fields are optional. Defaults: `max_solutions=5`, `seed=random`, `timeout_ms=10000`.
+All `options` fields are optional. Defaults: `max_solutions=5`, `seed=random`, `timeout_ms=15000`.
 
 Response `200 OK`:
 
@@ -206,3 +119,29 @@ curl -s -X POST http://localhost:8080/api/v1/solve \
     "options": {"seed": 42}
   }'
 ```
+
+---
+
+## CLI
+
+A thin wrapper around the library for scripting and offline use.
+
+```bash
+go install github.com/cbochs/gift-exchange/cmd/giftexchange@latest
+```
+
+Pass a problem via stdin and get assignments back as JSON:
+
+```bash
+echo '{
+  "participants": [
+    {"id":"alice","name":"Alice"},
+    {"id":"bob","name":"Bob"},
+    {"id":"carol","name":"Carol"},
+    {"id":"dave","name":"Dave"}
+  ],
+  "blocks": [{"from":"alice","to":"bob"}]
+}' | giftexchange solve -input - -json
+```
+
+Subcommands: `solve`, `validate`, `analyze`. Run `giftexchange <subcommand> -help` for flags.
