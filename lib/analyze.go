@@ -9,7 +9,7 @@ import (
 // a Hamiltonian cycle is possible. The Hamiltonian check runs a full DFS and
 // may be slow for large, heavily-constrained graphs; cancel ctx to abort it.
 func Analyze(ctx context.Context, p Problem) (GraphInfo, error) {
-	if err := validate(p); err != nil {
+	if err := validateStructural(p); err != nil {
 		return GraphInfo{}, err
 	}
 	g := buildGraph(p.Participants, p.Blocks)

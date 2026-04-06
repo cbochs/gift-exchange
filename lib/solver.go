@@ -11,7 +11,7 @@ import (
 // Returns up to opts.MaxSolutions solutions ranked best-first.
 // Returns ErrInfeasible if no valid assignment exists under any constraint level.
 func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
-	if err := validate(p); err != nil {
+	if err := validateStructural(p); err != nil {
 		return nil, err
 	}
 
@@ -31,6 +31,9 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 	}
 
 	g := buildGraph(p.Participants, p.Blocks)
+	if err := checkHall(g); err != nil {
+		return nil, err
+	}
 	n := g.n
 
 	// N/M progression: try minCycleLen = N, N/2, N/3, ... until a solution is
@@ -62,13 +65,16 @@ func Solve(ctx context.Context, p Problem, opts Options) ([]Solution, error) {
 // This is a thin exported wrapper for callers (e.g. the CLI validate subcommand)
 // that need to check feasibility without running the full solver.
 func Validate(p Problem) error {
-	return validate(p)
+	if err := validateStructural(p); err != nil {
+		return err
+	}
+	return checkHall(buildGraph(p.Participants, p.Blocks))
 }
 
-// validate checks structural validity of the problem and Hall's condition.
-// Returns ErrInvalid (wrapped) for structural errors or ErrInfeasible if
-// any participant has no valid recipients or gifters.
-func validate(p Problem) error {
+// validateStructural checks participant count, duplicate IDs, and block
+// participant references. Returns ErrInvalid (wrapped) on failure.
+// No graph is built; this is safe to call before buildGraph.
+func validateStructural(p Problem) error {
 	if len(p.Participants) < 2 {
 		return fmt.Errorf("%w: at least 2 participants required, got %d", ErrInvalid, len(p.Participants))
 	}
@@ -89,10 +95,13 @@ func validate(p Problem) error {
 			return fmt.Errorf("%w: block references unknown participant ID: %q", ErrInvalid, b.To)
 		}
 	}
+	return nil
+}
 
-	// Hall's condition: every participant needs at least one valid recipient
-	// (out-degree ≥ 1) and at least one valid gifter (in-degree ≥ 1).
-	g := buildGraph(p.Participants, p.Blocks)
+// checkHall verifies Hall's condition: every participant has at least one
+// valid recipient (out-degree ≥ 1) and at least one valid gifter (in-degree ≥ 1).
+// Returns ErrInfeasible if the condition is violated.
+func checkHall(g *graph) error {
 	inDegree := make([]int, g.n)
 	for i := range g.n {
 		if len(g.adj[i]) == 0 {
