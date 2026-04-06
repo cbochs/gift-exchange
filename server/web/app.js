@@ -877,8 +877,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Priority: URL hash > localStorage > empty state.
   // Only treat a hash as a shared link if it carries at least one participant.
+  // Clear the hash immediately so reloads don't re-apply stale link state.
   const hashState = decodeStateFromHash(location.hash);
   if (hashState?.participants.length) {
+    history.replaceState(null, "", location.pathname);
     applyImport(hashState, state);
     showHashBanner();
   } else {
