@@ -633,3 +633,93 @@ func TestSolveProperty(t *testing.T) {
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Fuzz tests
+// ---------------------------------------------------------------------------
+
+// FuzzSolve verifies that Solve never panics and that every returned solution
+// is a valid derangement: each participant gives exactly once and receives
+// exactly once, with no self-assignment.
+func FuzzSolve(f *testing.F) {
+	// Seed corpus: small valid problems.
+	f.Add(2, 0)
+	f.Add(4, 0)
+	f.Add(6, 2)
+	f.Add(10, 3)
+
+	f.Fuzz(func(t *testing.T, n int, numBlocks int) {
+		if n < 2 || n > 20 {
+			t.Skip()
+		}
+		if numBlocks < 0 {
+			numBlocks = 0
+		}
+
+		participants := makeParticipants(n)
+
+		// Build a deterministic set of blocks from numBlocks (capped to avoid
+		// making the problem trivially infeasible by blocking everything).
+		maxBlocks := n * (n - 1) / 2
+		if numBlocks > maxBlocks {
+			numBlocks = maxBlocks
+		}
+		rng := rand.New(rand.NewSource(int64(n*1000 + numBlocks)))
+		blockSet := make(map[[2]int]bool)
+		var blocks []Block
+		for len(blocks) < numBlocks {
+			i := rng.Intn(n)
+			j := rng.Intn(n)
+			if i == j || blockSet[[2]int{i, j}] {
+				continue
+			}
+			blockSet[[2]int{i, j}] = true
+			blocks = append(blocks, Block{From: participants[i].ID, To: participants[j].ID})
+		}
+
+		prob := Problem{Participants: participants, Blocks: blocks}
+		opts := Options{Seed: 1, MaxSolutions: 3}
+		sols, err := Solve(context.Background(), prob, opts)
+		if err != nil {
+			// ErrInvalid or ErrInfeasible are acceptable — not a bug.
+			if errors.Is(err, ErrInvalid) || errors.Is(err, ErrInfeasible) {
+				return
+			}
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		ids := make(map[string]bool, n)
+		for _, p := range participants {
+			ids[p.ID] = true
+		}
+
+		for si, sol := range sols {
+			if len(sol.Assignments) != n {
+				t.Fatalf("sol %d: expected %d assignments, got %d", si, n, len(sol.Assignments))
+			}
+			gifters := make(map[string]int, n)
+			recipients := make(map[string]int, n)
+			for _, a := range sol.Assignments {
+				if !ids[a.GifterID] {
+					t.Fatalf("sol %d: unknown gifter %q", si, a.GifterID)
+				}
+				if !ids[a.RecipientID] {
+					t.Fatalf("sol %d: unknown recipient %q", si, a.RecipientID)
+				}
+				if a.GifterID == a.RecipientID {
+					t.Fatalf("sol %d: self-assignment for %q", si, a.GifterID)
+				}
+				gifters[a.GifterID]++
+				recipients[a.RecipientID]++
+			}
+			for _, p := range participants {
+				if gifters[p.ID] != 1 {
+					t.Fatalf("sol %d: gifter %q appears %d times", si, p.ID, gifters[p.ID])
+				}
+				if recipients[p.ID] != 1 {
+					t.Fatalf("sol %d: recipient %q appears %d times", si, p.ID, recipients[p.ID])
+				}
+			}
+		}
+	})
+}
