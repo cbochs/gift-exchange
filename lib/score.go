@@ -1,8 +1,8 @@
 package giftexchange
 
 import (
-	"fmt"
-	"sort"
+	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -54,11 +54,11 @@ func canonicalize(assign []int) string {
 		}
 		parts := make([]string, len(indices))
 		for i := range indices {
-			parts[i] = fmt.Sprintf("%d", indices[(minPos+i)%len(indices)])
+			parts[i] = strconv.Itoa(indices[(minPos+i)%len(indices)])
 		}
 		cycleStrs = append(cycleStrs, "("+strings.Join(parts, ",")+")")
 	}
-	sort.Strings(cycleStrs)
+	slices.Sort(cycleStrs)
 	return strings.Join(cycleStrs, "|")
 }
 
@@ -97,8 +97,14 @@ func (s Score) Better(other Score) bool {
 }
 
 func sortByScore(solutions []Solution) {
-	sort.Slice(solutions, func(i, j int) bool {
-		return solutions[i].Score.Better(solutions[j].Score)
+	slices.SortFunc(solutions, func(a, b Solution) int {
+		if a.Score.Better(b.Score) {
+			return -1
+		}
+		if b.Score.Better(a.Score) {
+			return 1
+		}
+		return 0
 	})
 }
 
