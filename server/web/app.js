@@ -210,8 +210,9 @@ async function solveExchange(state) {
 // nodeMap persists node objects (with x, y, vx, vy) across re-renders.
 const nodeMap = new Map();
 
-let svgSel, sim, validEdgeLayer, solutionEdgeLayer, nodeCircleLayer, nodeLabelLayer;
+let svgSel, zoomLayer, zoomBehavior, sim, validEdgeLayer, solutionEdgeLayer, nodeCircleLayer, nodeLabelLayer;
 let graphWidth = 0, graphHeight = 0;
+let prevNodeIdSet = "";
 
 function syncNodes(participants) {
   const newIds = new Set(participants.map(p => p.id));
@@ -315,16 +316,28 @@ function initGraph() {
     .attr("d", "M0,-4L8,0L0,4")
     .attr("fill", d => d.color);
 
+  // Single transform target for zoom/pan — all graph layers live inside this group.
+  zoomLayer = svgSel.append("g").attr("class", "zoom-layer");
+
   // Layer order matters for z-index (last appended = topmost).
-  validEdgeLayer = svgSel.append("g").attr("class", "valid-edges");
-  solutionEdgeLayer = svgSel.append("g").attr("class", "solution-edges");
-  nodeCircleLayer = svgSel.append("g").attr("class", "node-circles");
-  nodeLabelLayer = svgSel.append("g").attr("class", "node-labels");
+  validEdgeLayer = zoomLayer.append("g").attr("class", "valid-edges");
+  solutionEdgeLayer = zoomLayer.append("g").attr("class", "solution-edges");
+  nodeCircleLayer = zoomLayer.append("g").attr("class", "node-circles");
+  nodeLabelLayer = zoomLayer.append("g").attr("class", "node-labels");
+
+  // Zoom + pan with default d3 filter (handles wheel/pinch natively).
+  // Node drag calls stopPropagation() so drag-start doesn't also trigger panning.
+  zoomBehavior = d3.zoom()
+    .scaleExtent([0.2, 4])
+    .on("zoom", ev => zoomLayer.attr("transform", ev.transform));
+  svgSel.call(zoomBehavior);
 
   sim = d3.forceSimulation()
     .force("link", d3.forceLink().id(d => d.id).distance(120))
-    .force("charge", d3.forceManyBody().strength(-380))
+    .force("charge", d3.forceManyBody().strength(-300))
     .force("center", d3.forceCenter(graphWidth / 2, graphHeight / 2))
+    .force("x", d3.forceX(graphWidth / 2).strength(0.07))
+    .force("y", d3.forceY(graphHeight / 2).strength(0.07))
     .force("collide", d3.forceCollide(NODE_RADIUS + 18))
     .on("tick", ticked);
 
@@ -333,6 +346,8 @@ function initGraph() {
     graphWidth = c.clientWidth;
     graphHeight = c.clientHeight;
     sim.force("center", d3.forceCenter(graphWidth / 2, graphHeight / 2));
+    sim.force("x", d3.forceX(graphWidth / 2).strength(0.07));
+    sim.force("y", d3.forceY(graphHeight / 2).strength(0.07));
     if (state.participants.length > 0) sim.alpha(0.3).restart();
   }).observe(container);
 }
@@ -340,12 +355,19 @@ function initGraph() {
 // Full graph restart: called when participants, blocks, or solve results change.
 function restartGraph() {
   const nodes = syncNodes(state.participants);
+
+  // Reset zoom to identity when the participant set changes (add/remove).
+  const nodeIdSet = state.participants.map(p => p.id).join(",");
+  if (nodeIdSet !== prevNodeIdSet) {
+    svgSel.call(zoomBehavior.transform, d3.zoomIdentity);
+    prevNodeIdSet = nodeIdSet;
+  }
   const validEdges = buildValidEdges(state.participants, effectiveBlocks(state));
   const solutionEdges = buildSolutionEdges(state.solutions[state.selectedSolution]);
   const nodeColors = buildNodeColors(state.solutions[state.selectedSolution]);
 
   const drag = d3.drag()
-    .on("start", (ev, d) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on("start", (ev, d) => { ev.sourceEvent.stopPropagation(); if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
     .on("drag", (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
     .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; });
 
