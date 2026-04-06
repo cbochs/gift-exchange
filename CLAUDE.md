@@ -96,7 +96,8 @@ gift-exchange/
 │   ├── phase6-polish.md       ← COMPLETE
 │   ├── phase7-deployment.md   ← COMPLETE
 │   ├── phase8-refactor.md     ← COMPLETE — refactoring & code quality (R1–R12)
-│   └── phase9-required.md     ← FUTURE WORK — required assignments (full-stack)
+│   ├── phase9-required.md     ← FUTURE WORK — required assignments (full-stack)
+│   └── phase10-persistence.md ← FUTURE WORK — localStorage + link sharing (frontend-only)
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
     ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete

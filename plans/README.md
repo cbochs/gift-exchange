@@ -14,6 +14,7 @@
 ## Future Work
 
 - **Required Assignments** (`plans/phase9-required.md`): Force specific gifter→recipient pairs in every solution. Full-stack feature spanning lib, server, and frontend.
+- **State Persistence & Link Sharing** (`plans/phase10-persistence.md`): LocalStorage save/load, reset button, compact URL hash encoding, and "Copy Link" button. Frontend-only.
 
 ---
 
