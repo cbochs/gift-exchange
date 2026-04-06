@@ -38,7 +38,7 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: Phase 8 — Required Assignments.
-**Last session**: Completed Phase 7. Moved `web/` to `server/web/`; added `go:embed` (`server/static.go`); server now serves embedded assets by default and reads config from `GIFT_EXCHANGE_*` env vars with flag override. `Dockerfile` (golang:1.26-alpine → distroless:nonroot, 3.1 MB image) and `helm/gift-exchange/` (Chart.yaml, values.yaml, four templates) at project root. `go.sum` created (empty; no external deps). All tests pass; `helm template` and `docker run` verified.
+**Last session**: Completed Phase 7. Moved `web/` to `server/web/`; added `go:embed` (`server/static.go`); server now serves embedded assets by default and reads config from `GIFT_EXCHANGE_*` env vars with flag override. Build and publish via Dagger (Dang SDK): `Container`/`Serve`/`Publish` functions in `.dagger/main.dang`; multi-arch (amd64 + arm64) publish to `ghcr.io/cbochs/gift-exchange`. Dockerfile and helm chart were drafted then removed in favor of Dagger.
 **Next action**: Phase 8 — read phase8-required.md plan before starting.
 
 ---
@@ -72,13 +72,12 @@ gift-exchange/
 │   ├── static.go              ← go:embed web
 │   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
 │   └── web/                   ← embedded frontend assets (moved from root web/)
-├── Dockerfile                 ← COMPLETE — golang:1.26-alpine → distroless:nonroot; 3.1 MB
-├── .dockerignore
-├── helm/                      ← COMPLETE — publishable Helm chart
-│   └── gift-exchange/
-│       ├── Chart.yaml         ← version + appVersion: 0.1.0
-│       ├── values.yaml        ← image.tag defaults to Chart.appVersion
-│       └── templates/         ← deployment, service, ingress, _helpers
+├── dagger.json                ← Dagger module root; declares "go" local dependency
+├── .dagger/                   ← COMPLETE — Dagger build pipeline (Dang SDK)
+│   ├── config.toml
+│   ├── main.dang              ← GiftExchange type: Container, Serve, Publish
+│   └── modules/go/
+│       └── main.dang          ← Go type: Build (cross-compile, pinned golang:1.26 digest)
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
