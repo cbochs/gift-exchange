@@ -11,13 +11,19 @@
     <h1>Gift Exchange</h1>
     <div class="header-actions">
       <input type="file" id="import-file-input" accept=".json" hidden>
+      <button id="btn-copy-link">Copy Link</button>
       <button id="btn-import">Import JSON</button>
+      <button id="btn-reset">Reset</button>
     </div>
   </header>
 
   <div class="layout">
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
+      <div id="hash-banner" class="hash-banner" hidden>
+        Loaded from a shared link — click <strong>Generate</strong> to solve, or edit freely.
+        <button class="hash-banner-dismiss" aria-label="Dismiss">×</button>
+      </div>
       <details class="sidebar-section" open>
         <summary>Participants</summary>
         <ul id="participant-list"></ul>

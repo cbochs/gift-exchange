@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] **P1** — LocalStorage save/load (input state only)
-- [ ] **P2** — Reset button (clears state + localStorage)
-- [ ] **P3** — Compact URL encoding helpers (`encodeStateToHash` / `decodeStateFromHash`)
-- [ ] **P4** — On-load hash detection and application
-- [ ] **P5** — "Copy Link" button + shared-link banner
+- [x] **P1** — LocalStorage save/load (input state only)
+- [x] **P2** — Reset button (clears state + localStorage)
+- [x] **P3** — Compact URL encoding helpers (`encodeStateToHash` / `decodeStateFromHash`)
+- [x] **P4** — On-load hash detection and application
+- [x] **P5** — "Copy Link" button + shared-link banner
 
 ---
 
@@ -25,7 +25,7 @@ Both features intentionally avoid auto-solving on load. The user always clicks *
 
 ### What to persist
 
-Only the problem *inputs*: `participants`, `relationships`, `blocks`, `options`. Not solutions — they are fast to recompute and excluding them avoids stale result display on refresh.
+Only the problem _inputs_: `participants`, `relationships`, `blocks`, `options`. Not solutions — they are fast to recompute and excluding them avoids stale result display on refresh.
 
 ### Storage key
 
@@ -82,9 +82,9 @@ The download JSON format is intentionally human-readable and round-trippable (lo
 
 Blocks store participant IDs as string slugs (e.g. `"alice"`, `"bob-smith"`), not integers. A block serialized as a JSON object is ~30–38 chars; as an index pair it is ~5–7 chars. For a realistic large group (15 participants, 105 blocks — the cousins_2026 data):
 
-| Encoding                    | JSON chars | Base64 chars |
-| --------------------------- | ---------- | ------------ |
-| Full JSON objects (slugs)   | ~4,500     | ~6,000       |
+| Encoding                     | JSON chars | Base64 chars |
+| ---------------------------- | ---------- | ------------ |
+| Full JSON objects (slugs)    | ~4,500     | ~6,000       |
 | Compact format (int indices) | ~900       | ~1,200       |
 
 The compact format is comfortably shareable via messaging apps; the full format may be truncated in link previews.
@@ -94,19 +94,25 @@ The compact format is comfortably shareable via messaging apps; the full format 
 ```json
 {
   "v": 1,
-  "p": [["alice", "Alice"], ["bob", "Bob"]],
-  "b": [[0, 1], [1, 2]],
+  "p": [
+    ["alice", "Alice"],
+    ["bob", "Bob"]
+  ],
+  "b": [
+    [0, 1],
+    [1, 2]
+  ],
   "r": [[0, 1]],
   "o": { "m": 5, "s": 42 }
 }
 ```
 
-| Key | Meaning                                               |
-| --- | ----------------------------------------------------- |
-| `v` | Format version (integer)                              |
-| `p` | Participants as `[id, name]` tuples                   |
-| `b` | Blocks as `[from_index, to_index]` index pairs        |
-| `r` | Relationships as `[a_index, b_index]` index pairs     |
+| Key | Meaning                                                |
+| --- | ------------------------------------------------------ |
+| `v` | Format version (integer)                               |
+| `p` | Participants as `[id, name]` tuples                    |
+| `b` | Blocks as `[from_index, to_index]` index pairs         |
+| `r` | Relationships as `[a_index, b_index]` index pairs      |
 | `o` | Options: `m` = maxSolutions, `s` = seed (omit if null) |
 
 Index pairs reference positions in `p`. Options fields are omitted when equal to defaults.
@@ -185,13 +191,13 @@ Dismiss on click or after 8s. This prevents user confusion about unexpected form
 
 Work through P1–P5 in order. Each is independently committable.
 
-| Item | Files touched                            | Dependencies |
-| ---- | ---------------------------------------- | ------------ |
+| Item | Files touched                             | Dependencies |
+| ---- | ----------------------------------------- | ------------ |
 | P1   | `app.js` (saveState, loadState, debounce) | none         |
-| P2   | `app.js`, `index.html` (Reset button)    | none         |
-| P3   | `app.js` (encode/decode helpers + tests) | none         |
-| P4   | `app.js` (startup logic)                 | P1, P3       |
-| P5   | `app.js`, `index.html`, `style.css`      | P3, P4       |
+| P2   | `app.js`, `index.html` (Reset button)     | none         |
+| P3   | `app.js` (encode/decode helpers + tests)  | none         |
+| P4   | `app.js` (startup logic)                  | P1, P3       |
+| P5   | `app.js`, `index.html`, `style.css`       | P3, P4       |
 
 ---
 

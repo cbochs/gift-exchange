@@ -402,6 +402,32 @@ button:hover { background: var(--bg); }
   stroke-opacity: 0.85;
 }
 
+/* ─── Hash banner ────────────────────────────────────────────────────────────── */
+.hash-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  font-size: 12px;
+  color: #1e40af;
+  flex-shrink: 0;
+}
+
+.hash-banner-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 15px;
+  line-height: 1;
+  color: #93c5fd;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.hash-banner-dismiss:hover { color: #1e40af; background: none; }
+
 /* ─── Mobile layout ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   body {

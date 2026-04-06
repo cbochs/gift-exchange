@@ -103,6 +103,88 @@ export function applyImport(doc, state) {
   return true;
 }
 
+// ─── Persistence & link sharing ───────────────────────────────────────────────
+
+const LS_KEY = "gift-exchange-v1";
+let saveTimer = null;
+
+function saveStateDebounced() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 300);
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      participants: state.participants,
+      relationships: state.relationships,
+      blocks: state.blocks,
+      options: {
+        max_solutions: state.options.maxSolutions,
+        ...(state.options.seed != null ? { seed: state.options.seed } : {}),
+      },
+    }));
+  } catch { /* storage unavailable or quota exceeded */ }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    applyImport(JSON.parse(raw), state);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function encodeStateToHash(state) {
+  const idxOf = Object.fromEntries(state.participants.map((p, i) => [p.id, i]));
+  const compact = {
+    v: 1,
+    p: state.participants.map(p => [p.id, p.name]),
+    b: state.blocks.map(b => [idxOf[b.from], idxOf[b.to]]),
+    r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
+  };
+  if (state.options.maxSolutions !== 5 || state.options.seed != null) {
+    compact.o = {};
+    if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
+    if (state.options.seed != null) compact.o.s = state.options.seed;
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify(compact));
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return "#v1:" + btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+export function decodeStateFromHash(hash) {
+  try {
+    if (!hash.startsWith("#v1:")) return null;
+    const b64 = hash.slice(4).replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const compact = JSON.parse(new TextDecoder().decode(bytes));
+    if (compact.v !== 1 || !Array.isArray(compact.p)) return null;
+    const participants = compact.p.map(([id, name]) => ({ id, name }));
+    const blocks = (compact.b ?? [])
+      .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
+      .filter(b => b.from != null && b.to != null);
+    const relationships = (compact.r ?? [])
+      .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
+      .filter(r => r.a != null && r.b != null);
+    return {
+      participants,
+      blocks,
+      relationships,
+      options: {
+        max_solutions: compact.o?.m ?? 5,
+        ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 function esc(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -343,6 +425,7 @@ function renderParticipantList() {
       state.blocks = state.blocks.filter(b => b.from !== p.id && b.to !== p.id);
       state.solutions = [];
       state.selectedSolution = 0;
+      saveStateDebounced();
       renderSidebar();
       renderSolutionsPanel();
       restartGraph();
@@ -394,6 +477,7 @@ function renderBlockList() {
       state.blocks.splice(i, 1);
       state.solutions = [];
       state.selectedSolution = 0;
+      saveStateDebounced();
       renderSidebar();
       renderSolutionsPanel();
       restartGraph();
@@ -444,6 +528,7 @@ function renderRelationshipList() {
       state.relationships.splice(i, 1);
       state.solutions = [];
       state.selectedSolution = 0;
+      saveStateDebounced();
       renderSidebar();
       renderSolutionsPanel();
       restartGraph();
@@ -564,6 +649,7 @@ async function onGenerate() {
     state.loading = false;
   }
 
+  saveState();
   renderSidebar();
   renderSolutionsPanel();
   restartGraph();
@@ -581,6 +667,7 @@ function onAddAsHistoryBlocks() {
   }
   state.solutions = [];
   state.selectedSolution = 0;
+  saveStateDebounced();
   renderSidebar();
   renderSolutionsPanel();
   restartGraph();
@@ -637,11 +724,55 @@ async function onImport(file) {
     state.error = "Import failed: " + err.message;
   }
 
+  saveState();
   renderSidebar();
   renderOptions();
   renderSolutionsPanel();
   restartGraph();
   updateEmptyState();
+}
+
+// ─── Reset / Copy Link / Hash banner ──────────────────────────────────────────
+
+function onReset() {
+  state.participants = [];
+  state.relationships = [];
+  state.blocks = [];
+  state.options = { maxSolutions: 5, seed: null };
+  state.solutions = [];
+  state.selectedSolution = 0;
+  state.loading = false;
+  state.error = null;
+  try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+  history.replaceState(null, "", location.pathname);
+  document.getElementById("hash-banner").hidden = true;
+  renderSidebar();
+  renderOptions();
+  renderSolutionsPanel();
+  restartGraph();
+  updateEmptyState();
+}
+
+async function onCopyLink() {
+  const btn = document.getElementById("btn-copy-link");
+  const url = location.origin + location.pathname + encodeStateToHash(state);
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = "Copy Link"; }, 2000);
+  } catch {
+    prompt("Copy this link:", url);
+  }
+}
+
+function showHashBanner() {
+  const el = document.getElementById("hash-banner");
+  el.hidden = false;
+  const dismissTimer = setTimeout(() => { el.hidden = true; }, 8000);
+  el.querySelector(".hash-banner-dismiss").addEventListener("click", () => {
+    clearTimeout(dismissTimer);
+    el.hidden = true;
+  }, { once: true });
 }
 
 // ─── Event wiring ─────────────────────────────────────────────────────────────
@@ -660,6 +791,7 @@ function wireEvents() {
     state.participants.push({ id, name });
     state.solutions = [];
     state.selectedSolution = 0;
+    saveStateDebounced();
     nameInput.value = "";
     renderSidebar();
     renderSolutionsPanel();
@@ -680,6 +812,7 @@ function wireEvents() {
     state.relationships.push({ a, b });
     state.solutions = [];
     state.selectedSolution = 0;
+    saveStateDebounced();
     renderSidebar();
     renderSolutionsPanel();
     restartGraph();
@@ -694,6 +827,7 @@ function wireEvents() {
     state.blocks.push({ from, to });
     state.solutions = [];
     state.selectedSolution = 0;
+    saveStateDebounced();
     renderSidebar();
     renderSolutionsPanel();
     restartGraph();
@@ -702,10 +836,12 @@ function wireEvents() {
   // Options (read at solve time; update state on change)
   document.getElementById("opt-max-solutions").addEventListener("input", e => {
     state.options.maxSolutions = Math.max(1, parseInt(e.target.value, 10) || 5);
+    saveStateDebounced();
   });
   document.getElementById("opt-seed").addEventListener("input", e => {
     const v = e.target.value.trim();
     state.options.seed = v ? parseInt(v, 10) : null;
+    saveStateDebounced();
   });
 
   // Generate
@@ -725,6 +861,12 @@ function wireEvents() {
     if (file) onImport(file);
     fileInput.value = "";
   });
+
+  // Copy Link
+  document.getElementById("btn-copy-link").addEventListener("click", onCopyLink);
+
+  // Reset
+  document.getElementById("btn-reset").addEventListener("click", onReset);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -732,8 +874,19 @@ function wireEvents() {
 document.addEventListener("DOMContentLoaded", () => {
   initGraph();
   wireEvents();
+
+  // Priority: URL hash > localStorage > empty state
+  const hashState = decodeStateFromHash(location.hash);
+  if (hashState) {
+    applyImport(hashState, state);
+    showHashBanner();
+  } else {
+    loadFromLocalStorage();
+  }
+
   renderSidebar();
   renderOptions();
   renderSolutionsPanel();
+  restartGraph();
   updateEmptyState();
 });
