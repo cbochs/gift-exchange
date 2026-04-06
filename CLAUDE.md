@@ -28,6 +28,7 @@ everyone). Returns multiple ranked solutions.
 Do not start any implementation work before reading the relevant phase plan.
 
 **Docs to keep current after every session:**
+
 - `CLAUDE.md` — active phase, last session summary, next action, codebase tree
 - `plans/README.md` — phase checklist (`[ ]` → `[x]` when complete)
 - `plans/phase<N>-*.md` — status checklist at the top of the active phase
@@ -133,4 +134,3 @@ These are settled. Do not re-open them without flagging to the user.
    `test:`, `chore:`, etc.) with a body that explains what changed and why. Each
    logical unit of work (a new file, a passing test suite, a bug fix) warrants its
    own commit.
-
