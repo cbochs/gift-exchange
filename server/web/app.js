@@ -442,12 +442,51 @@ function renderParticipantList() {
   document.getElementById("btn-add-participant").disabled = atCap;
   state.participants.forEach((p, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${esc(p.name)}</span>`;
-    const btn = document.createElement("button");
-    btn.className = "remove-btn";
-    btn.textContent = "×";
-    btn.title = "Remove";
-    btn.addEventListener("click", () => {
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = p.name;
+    nameSpan.style.flex = "1";
+    li.appendChild(nameSpan);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn";
+    editBtn.textContent = "✎";
+    editBtn.title = "Rename";
+    editBtn.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = p.name;
+      input.className = "rename-input";
+      li.replaceChild(input, nameSpan);
+      editBtn.disabled = true;
+      input.focus();
+      input.select();
+
+      function confirm() {
+        const newName = input.value.trim();
+        if (newName && newName !== p.name) {
+          p.name = newName;
+          saveStateDebounced();
+          renderSidebar();
+          restartGraph();
+        } else {
+          li.replaceChild(nameSpan, input);
+          editBtn.disabled = false;
+        }
+      }
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); confirm(); }
+        if (e.key === "Escape") { li.replaceChild(nameSpan, input); editBtn.disabled = false; }
+      });
+      input.addEventListener("blur", confirm);
+    });
+    li.appendChild(editBtn);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "remove-btn";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Remove";
+    removeBtn.addEventListener("click", () => {
       state.participants.splice(i, 1);
       state.relationships = state.relationships.filter(r => r.a !== p.id && r.b !== p.id);
       state.blocks = state.blocks.filter(b => b.from !== p.id && b.to !== p.id);
@@ -459,7 +498,8 @@ function renderParticipantList() {
       restartGraph();
       updateEmptyState();
     });
-    li.appendChild(btn);
+    li.appendChild(removeBtn);
+
     ul.appendChild(li);
   });
 }

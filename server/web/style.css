@@ -136,6 +136,31 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 #relationship-list li .remove-btn:hover,
 #block-list li .remove-btn:hover { color: var(--danger); }
 
+#participant-list li .edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+#participant-list li .edit-btn:hover { color: var(--accent); }
+#participant-list li .edit-btn:disabled { opacity: 0.3; cursor: default; }
+
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 5px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 13px;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  outline: none;
+}
+
 /* Add row */
 .add-row {
   display: flex;
