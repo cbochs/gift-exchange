@@ -143,51 +143,106 @@ function loadFromLocalStorage() {
   }
 }
 
+function hashEncode(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+function hashDecode(b64) {
+  const bytes = Uint8Array.from(atob(b64.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 export function encodeStateToHash(state) {
   const idxOf = Object.fromEntries(state.participants.map((p, i) => [p.id, i]));
+  const groupIdxOf = Object.fromEntries(state.blockGroups.map((g, i) => [g.id, i]));
+
+  const ungrouped = state.blocks.filter(b => !b.group);
+  const grouped   = state.blocks.filter(b =>  b.group);
+
   const compact = {
-    v: 1,
+    v: 2,
     p: state.participants.map(p => [p.id, p.name]),
-    b: state.blocks.map(b => [idxOf[b.from], idxOf[b.to]]),
     r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
+    b: ungrouped.map(b => [idxOf[b.from], idxOf[b.to]]),
+    ...(grouped.length ? {
+      g: state.blockGroups.map(g => g.label),
+      bg: grouped.map(b => [idxOf[b.from], idxOf[b.to], groupIdxOf[b.group]]),
+    } : {}),
   };
   if (state.options.maxSolutions !== 5 || state.options.seed != null) {
     compact.o = {};
     if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
     if (state.options.seed != null) compact.o.s = state.options.seed;
   }
-  const bytes = new TextEncoder().encode(JSON.stringify(compact));
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return "#v1:" + btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return "#v2:" + hashEncode(compact);
 }
 
 export function decodeStateFromHash(hash) {
   try {
-    if (!hash.startsWith("#v1:")) return null;
-    const b64 = hash.slice(4).replace(/-/g, "+").replace(/_/g, "/");
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const compact = JSON.parse(new TextDecoder().decode(bytes));
-    if (compact.v !== 1 || !Array.isArray(compact.p)) return null;
-    const participants = compact.p.map(([id, name]) => ({ id, name }));
-    const blocks = (compact.b ?? [])
-      .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
-      .filter(b => b.from != null && b.to != null);
-    const relationships = (compact.r ?? [])
-      .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
-      .filter(r => r.a != null && r.b != null);
-    return {
-      participants,
-      blocks,
-      relationships,
-      options: {
-        max_solutions: compact.o?.m ?? 5,
-        ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
-      },
-    };
+    if (hash.startsWith("#v2:")) return decodeV2(hashDecode(hash.slice(4)));
+    if (hash.startsWith("#v1:")) return decodeV1(hashDecode(hash.slice(4)));
+    return null;
   } catch {
     return null;
   }
+}
+
+function decodeV1(compact) {
+  if (compact.v !== 1 || !Array.isArray(compact.p)) return null;
+  const participants = compact.p.map(([id, name]) => ({ id, name }));
+  const blocks = (compact.b ?? [])
+    .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
+    .filter(b => b.from != null && b.to != null);
+  const relationships = (compact.r ?? [])
+    .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
+    .filter(r => r.a != null && r.b != null);
+  return {
+    participants, blocks, relationships, blockGroups: [],
+    options: {
+      max_solutions: compact.o?.m ?? 5,
+      ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
+    },
+  };
+}
+
+function decodeV2(compact) {
+  if (compact.v !== 2 || !Array.isArray(compact.p)) return null;
+  const participants = compact.p.map(([id, name]) => ({ id, name }));
+
+  // Rebuild blockGroups from labels, assigning fresh IDs
+  const groupLabels = compact.g ?? [];
+  const existingGroupIds = new Set();
+  const blockGroups = groupLabels.map(label => {
+    const id = uniqueId(slugify(label), existingGroupIds);
+    existingGroupIds.add(id);
+    return { id, label, collapsed: false };
+  });
+
+  const blocks = [
+    ...(compact.b ?? [])
+      .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
+      .filter(b => b.from != null && b.to != null),
+    ...(compact.bg ?? [])
+      .map(([fi, ti, gi]) => ({
+        from: participants[fi]?.id,
+        to: participants[ti]?.id,
+        group: blockGroups[gi]?.id,
+      }))
+      .filter(b => b.from != null && b.to != null && b.group != null),
+  ];
+  const relationships = (compact.r ?? [])
+    .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
+    .filter(r => r.a != null && r.b != null);
+  return {
+    participants, blocks, relationships, blockGroups,
+    options: {
+      max_solutions: compact.o?.m ?? 5,
+      ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
+    },
+  };
 }
 
 function esc(s) {
