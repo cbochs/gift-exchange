@@ -2,10 +2,10 @@
 
 ## Status
 
-- [ ] **P1** — Solutions panel: two-row header layout
-- [ ] **P2** — D3 graph: zoom and pan support
-- [ ] **P3** — D3 graph: disconnected-component gravity fix
-- [ ] **P4** — Participant cap: 20-person limit with count display
+- [x] **P1** — Solutions panel: two-row header layout
+- [x] **P2** — D3 graph: zoom and pan support
+- [x] **P3** — D3 graph: disconnected-component gravity fix
+- [x] **P4** — Participant cap: 20-person limit with count display
 
 All changes are frontend-only (`server/web/`). No Go changes required.
 

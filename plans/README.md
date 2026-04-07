@@ -11,7 +11,7 @@
 - [x] **Phase 7 — Deployment**: `go:embed` static assets, Docker multi-stage build, Helm chart, Forward Auth proxy.
 - [x] **Phase 8 — Refactoring & Code Quality**: Structural improvements before feature work: solver abstraction, shared DTOs, project layout, error types, constants, context cancellation.
 - [x] **Phase 10 — State Persistence & Link Sharing**: LocalStorage save/load, reset button, compact URL hash encoding, "Copy Link" button, shared-link banner. Frontend-only.
-- [ ] **Phase 11 — UI Polish**: Solutions panel two-row layout, D3 zoom/pan, disconnected-graph gravity fix, 20-person participant cap. Frontend-only.
+- [x] **Phase 11 — UI Polish**: Solutions panel two-row layout, D3 zoom/pan, disconnected-graph gravity fix, 20-person participant cap. Frontend-only.
 
 ## Future Work
 
