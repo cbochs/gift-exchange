@@ -12,10 +12,16 @@
   --border:    #e5e7eb;
   --text:      #111827;
   --muted:     #6b7280;
-  --accent:    #2563eb;
-  --accent-h:  #1d4ed8;
-  --danger:    #dc2626;
-  --radius:    5px;
+  --accent:      #2563eb;
+  --accent-h:    #1d4ed8;
+  --accent-ring:   rgba(37, 99, 235, 0.15);
+  --danger:        #dc2626;
+  --radius:        5px;
+
+  --banner-bg:      #eff6ff;
+  --banner-border:  #bfdbfe;
+  --banner-text:    #1e40af;
+  --banner-dismiss: #93c5fd;
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
@@ -98,9 +104,15 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 
 /* Lists */
 #participant-list,
-#relationship-list,
-#block-list {
+#relationship-list {
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+
+#block-list {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -145,36 +157,22 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
   line-height: 1.4;
 }
 
-#participant-list li .remove-btn,
-#relationship-list li .remove-btn,
-#block-list li .remove-btn {
+.icon-btn {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--muted);
-  font-size: 15px;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
-  margin-left: 6px;
 }
-#participant-list li .remove-btn:hover,
-#relationship-list li .remove-btn:hover,
-#block-list li .remove-btn:hover { color: var(--danger); }
+.icon-btn:disabled { opacity: 0.3; cursor: default; }
 
-#participant-list li .edit-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  margin-left: 4px;
-}
-#participant-list li .edit-btn:hover { color: var(--accent); }
-#participant-list li .edit-btn:disabled { opacity: 0.3; cursor: default; }
+.remove-btn { font-size: 15px; margin-left: 6px; }
+.remove-btn:hover { color: var(--danger); }
+
+.edit-btn { font-size: 13px; margin-left: 4px; }
+.edit-btn:hover { color: var(--accent); }
 
 .rename-input {
   flex: 1;
@@ -183,7 +181,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   font-size: 13px;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 2px var(--accent-ring);
   outline: none;
 }
 
@@ -209,7 +207,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 .add-row select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 2px var(--accent-ring);
 }
 
 .block-add-row,
@@ -241,7 +239,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 .option-fields input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 2px var(--accent-ring);
 }
 .hint { color: var(--muted); font-size: 11px; font-weight: 400; }
 
@@ -425,7 +423,6 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   font-weight: 500;
 }
 .btn-primary:hover { background: var(--accent-h); border-color: var(--accent-h); }
-.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-secondary {
   font-size: 12px;
@@ -478,10 +475,10 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   align-items: center;
   gap: 8px;
   padding: 7px 16px;
-  background: #eff6ff;
-  border-bottom: 1px solid #bfdbfe;
+  background: var(--banner-bg);
+  border-bottom: 1px solid var(--banner-border);
   font-size: 12px;
-  color: #1e40af;
+  color: var(--banner-text);
   flex-shrink: 0;
 }
 
@@ -492,11 +489,11 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   padding: 0 2px;
   font-size: 15px;
   line-height: 1;
-  color: #93c5fd;
+  color: var(--banner-dismiss);
   cursor: pointer;
   flex-shrink: 0;
 }
-.hash-banner-dismiss:hover { color: #1e40af; background: none; }
+.hash-banner-dismiss:hover { color: var(--banner-text); background: none; }
 
 /* ─── Mobile layout ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {

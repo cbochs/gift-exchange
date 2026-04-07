@@ -505,7 +505,7 @@ function renderParticipantList() {
     li.appendChild(nameSpan);
 
     const editBtn = document.createElement("button");
-    editBtn.className = "edit-btn";
+    editBtn.className = "icon-btn edit-btn";
     editBtn.textContent = "✎";
     editBtn.title = "Rename";
     editBtn.addEventListener("click", () => {
@@ -539,7 +539,7 @@ function renderParticipantList() {
     li.appendChild(editBtn);
 
     const removeBtn = document.createElement("button");
-    removeBtn.className = "remove-btn";
+    removeBtn.className = "icon-btn remove-btn";
     removeBtn.textContent = "×";
     removeBtn.title = "Remove";
     removeBtn.addEventListener("click", () => {
@@ -586,7 +586,7 @@ function makeBlockItem(b, i) {
   const li = document.createElement("li");
   li.innerHTML = `<span>${esc(fromName)} → ${esc(toName)}</span>`;
   const btn = document.createElement("button");
-  btn.className = "remove-btn";
+  btn.className = "icon-btn remove-btn";
   btn.textContent = "×";
   btn.title = "Remove block";
   btn.addEventListener("click", () => {
@@ -628,7 +628,7 @@ function renderBlockList() {
 
     // Edit button
     const editBtn = document.createElement("button");
-    editBtn.className = "edit-btn";
+    editBtn.className = "icon-btn edit-btn";
     editBtn.textContent = "✎";
     editBtn.title = "Rename group";
     editBtn.addEventListener("click", e => {
@@ -663,7 +663,7 @@ function renderBlockList() {
 
     // Delete group button
     const delBtn = document.createElement("button");
-    delBtn.className = "remove-btn";
+    delBtn.className = "icon-btn remove-btn";
     delBtn.textContent = "×";
     delBtn.title = "Delete group and all its blocks";
     delBtn.addEventListener("click", e => {
@@ -726,7 +726,7 @@ function renderRelationshipList() {
     const li = document.createElement("li");
     li.innerHTML = `<span>${esc(aName)} ↔ ${esc(bName)}</span>`;
     const btn = document.createElement("button");
-    btn.className = "remove-btn";
+    btn.className = "icon-btn remove-btn";
     btn.textContent = "×";
     btn.title = "Remove";
     btn.addEventListener("click", () => {
