@@ -13,6 +13,20 @@ type graph struct {
 }
 
 func buildGraph(participants []Participant, blocks []Block) *graph {
+	// Sort by ID so the node→index mapping is independent of input order.
+	// This ensures a given seed always produces the same result regardless of
+	// the order participants were added.
+	participants = slices.Clone(participants)
+	slices.SortFunc(participants, func(a, b Participant) int {
+		if a.ID < b.ID {
+			return -1
+		}
+		if a.ID > b.ID {
+			return 1
+		}
+		return 0
+	})
+
 	n := len(participants)
 	g := &graph{
 		n:   n,

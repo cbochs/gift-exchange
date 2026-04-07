@@ -474,6 +474,49 @@ func TestSolve_Reproducible(t *testing.T) {
 	}
 }
 
+// TestSolve_ParticipantOrderIndependence verifies that the same seed produces
+// identical solutions regardless of participant input order.
+func TestSolve_ParticipantOrderIndependence(t *testing.T) {
+	base := makeParticipants(6)
+	opts := Options{MaxSolutions: 3, Seed: 42}
+
+	solveWith := func(order []int) []Solution {
+		p := Problem{Participants: make([]Participant, len(order))}
+		for i, idx := range order {
+			p.Participants[i] = base[idx]
+		}
+		sols, err := Solve(context.Background(), p, opts)
+		if err != nil {
+			t.Fatalf("Solve error: %v", err)
+		}
+		return sols
+	}
+
+	canonical := solveWith([]int{0, 1, 2, 3, 4, 5})
+	reversed  := solveWith([]int{5, 4, 3, 2, 1, 0})
+	shuffled  := solveWith([]int{3, 0, 5, 1, 4, 2})
+
+	for _, tc := range []struct {
+		name string
+		sols []Solution
+	}{
+		{"reversed", reversed},
+		{"shuffled", shuffled},
+	} {
+		if len(tc.sols) != len(canonical) {
+			t.Errorf("%s: got %d solutions, want %d", tc.name, len(tc.sols), len(canonical))
+			continue
+		}
+		for i := range canonical {
+			k1 := solutionKey(canonical[i])
+			k2 := solutionKey(tc.sols[i])
+			if k1 != k2 {
+				t.Errorf("%s solution %d differs:\n  canonical: %s\n  got:       %s", tc.name, i, k1, k2)
+			}
+		}
+	}
+}
+
 func TestSolve_MultipleSolutions(t *testing.T) {
 	// n=6 complete graph has many Hamiltonian cycles; 5 distinct ones should be findable.
 	p := Problem{Participants: makeParticipants(6)}
