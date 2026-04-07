@@ -20,6 +20,7 @@ const state = {
   },
   solutions: [],       // SolutionDTO[]
   selectedSolution: 0,
+  showValidEdges: true,
   loading: false,
   error: null,
 };
@@ -434,6 +435,7 @@ function restartGraph() {
     .join("path")
     .attr("class", "edge-valid")
     .attr("marker-end", "url(#arrow-valid)");
+  validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 
   // Solution edges (visual overlay only — not fed into forceLink)
   solutionEdgeLayer.selectAll("path")
@@ -1080,6 +1082,12 @@ function wireEvents() {
 
   // Reset
   document.getElementById("btn-reset").addEventListener("click", onReset);
+
+  // Toggle valid edges
+  document.getElementById("chk-show-edges").addEventListener("change", e => {
+    state.showValidEdges = e.target.checked;
+    validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
+  });
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
