@@ -50,7 +50,7 @@ pre-existing group IDs and produce unexpected collisions.
 **File**: `app.js`, line 26
 
 ```js
-window._state = state;  // ← delete this line
+window._state = state; // ← delete this line
 ```
 
 A console shortcut left in production. Leaks internal state object to the
@@ -63,6 +63,7 @@ global scope.
 **File**: `app.js`
 
 The sequence:
+
 ```js
 state.solutions = [];
 state.selectedSolution = 0;
@@ -71,6 +72,7 @@ renderSidebar();
 renderSolutionsPanel();
 restartGraph();
 ```
+
 appears 8+ times: in the add-block handler, add-relationship handler, remove-
 participant handler, remove-block handler (`makeBlockItem`), remove-relationship
 handler, delete-group handler, and `onAddAsHistoryBlocks`. This is the dominant
@@ -111,14 +113,17 @@ applied: `onReset` and `onImport` call both; add/remove operations call neither
 (relying on the fact that options don't change during those flows).
 
 Additionally, `onGenerate` manually mutates the seed DOM element:
+
 ```js
 document.getElementById("opt-seed").value = resp.seed_used;
 ```
+
 This is the only place state is written to the DOM outside of a render
 function. Since `state.options.seed = resp.seed_used` is set just before, a
 `renderOptions()` call would handle it correctly.
 
 **Fix**:
+
 1. Add `renderOptions()` call at the end of `renderSidebar()`.
 2. Replace the manual DOM update in `onGenerate` with nothing — `renderSidebar()`
    (already called after generate) will handle it.
@@ -149,6 +154,7 @@ participant case needs updating.
 **File**: `app.js`
 
 Current flow:
+
 1. Build `blockedSet` — set of `"from→to"` strings. ✓
 2. Build `pairSet` — set of all valid `"from→to"` strings (O(n²)).
 3. Iterate `pairSet`, call `indexOf("→")` on each key to recover `fromId`/`toId`,
@@ -166,7 +172,7 @@ rebuilding the key:
 
 ```js
 export function buildValidEdges(participants, blocks) {
-  const blockedSet = new Set(blocks.map(b => `${b.from}\u2192${b.to}`));
+  const blockedSet = new Set(blocks.map((b) => `${b.from}\u2192${b.to}`));
   const validSet = new Set();
   for (const src of participants)
     for (const tgt of participants)
@@ -179,8 +185,10 @@ export function buildValidEdges(participants, blocks) {
       const key = `${src.id}\u2192${tgt.id}`;
       if (validSet.has(key)) {
         edges.push({
-          source: src.id, target: src.id,  // d3 resolves by id
-          sourceId: src.id, targetId: tgt.id,
+          source: src.id,
+          target: src.id, // d3 resolves by id
+          sourceId: src.id,
+          targetId: tgt.id,
           kind: "valid",
           bidirectional: validSet.has(`${tgt.id}\u2192${src.id}`),
         });
@@ -228,14 +236,17 @@ and a separate `#block-list` rule for the `<div>`.
 
 `rgba(37, 99, 235, 0.15)` — the blue focus ring color — appears in three
 rules:
+
 - `.add-row input:focus, .add-row select:focus`
 - `.option-fields input:focus`
 - `.rename-input`
 
 Add to `:root`:
+
 ```css
 --accent-ring: rgba(37, 99, 235, 0.15);
 ```
+
 Replace all three occurrences with `var(--accent-ring)`.
 
 ---
@@ -252,6 +263,7 @@ The only differences are `font-size` (15px vs 13px) and `margin-left`
 (6px vs 4px), and the hover color (`--danger` vs `--accent`).
 
 Extract a base class:
+
 ```css
 .icon-btn {
   background: none;
@@ -262,16 +274,30 @@ Extract a base class:
   padding: 0 2px;
   flex-shrink: 0;
 }
-.icon-btn:disabled { opacity: 0.3; cursor: default; }
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 ```
 
 Then keep only the differing properties on `.remove-btn` and `.edit-btn`:
-```css
-.remove-btn { font-size: 15px; margin-left: 6px; }
-.remove-btn:hover { color: var(--danger); }
 
-.edit-btn { font-size: 13px; margin-left: 4px; }
-.edit-btn:hover { color: var(--accent); }
+```css
+.remove-btn {
+  font-size: 15px;
+  margin-left: 6px;
+}
+.remove-btn:hover {
+  color: var(--danger);
+}
+
+.edit-btn {
+  font-size: 13px;
+  margin-left: 4px;
+}
+.edit-btn:hover {
+  color: var(--accent);
+}
 ```
 
 Update HTML/JS to use class `icon-btn remove-btn` and `icon-btn edit-btn`.
@@ -285,7 +311,10 @@ remain on `.block-group-header .edit-btn` / `.block-group-header .remove-btn`.
 **File**: `style.css`
 
 ```css
-.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }  /* ← remove */
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+} /* ← remove */
 ```
 
 `button:disabled { opacity: 0.55; cursor: not-allowed; }` already covers this.
@@ -301,10 +330,11 @@ The hash-banner uses four hardcoded colors that don't appear elsewhere:
 `#eff6ff` (bg), `#bfdbfe` (border), `#1e40af` (text), `#93c5fd` (dismiss).
 
 Add to `:root`:
+
 ```css
---banner-bg:      #eff6ff;
---banner-border:  #bfdbfe;
---banner-text:    #1e40af;
+--banner-bg: #eff6ff;
+--banner-border: #bfdbfe;
+--banner-text: #1e40af;
 --banner-dismiss: #93c5fd;
 ```
 
@@ -315,11 +345,11 @@ than C1–C3 but keeps all color decisions in one place.
 
 ## Files to Change
 
-| File | Changes |
-|---|---|
-| `server/web/app.js` | B1, B2, S1, S2, S3, S4 |
-| `server/web/index.html` | H1 (ul → div for block-list) |
-| `server/web/style.css` | H1 (selector update), C1, C2, C3, C4 |
+| File                    | Changes                              |
+| ----------------------- | ------------------------------------ |
+| `server/web/app.js`     | B1, B2, S1, S2, S3, S4               |
+| `server/web/index.html` | H1 (ul → div for block-list)         |
+| `server/web/style.css`  | H1 (selector update), C1, C2, C3, C4 |
 
 ---
 
