@@ -44,27 +44,25 @@ export function uniqueId(name, existingIds) {
 
 export function buildValidEdges(participants, blocks) {
   const blockedSet = new Set(blocks.map(b => `${b.from}\u2192${b.to}`));
-  const pairSet = new Set();
-
-  for (const src of participants) {
-    for (const tgt of participants) {
-      if (src.id !== tgt.id && !blockedSet.has(`${src.id}\u2192${tgt.id}`)) {
-        pairSet.add(`${src.id}\u2192${tgt.id}`);
-      }
-    }
-  }
+  const validSet = new Set();
+  for (const src of participants)
+    for (const tgt of participants)
+      if (src.id !== tgt.id && !blockedSet.has(`${src.id}\u2192${tgt.id}`))
+        validSet.add(`${src.id}\u2192${tgt.id}`);
 
   const edges = [];
-  for (const key of pairSet) {
-    const arrow = key.indexOf("\u2192");
-    const fromId = key.slice(0, arrow);
-    const toId = key.slice(arrow + 1);
-    edges.push({
-      source: fromId, target: toId,
-      sourceId: fromId, targetId: toId,
-      kind: "valid",
-      bidirectional: pairSet.has(`${toId}\u2192${fromId}`),
-    });
+  for (const src of participants) {
+    for (const tgt of participants) {
+      const key = `${src.id}\u2192${tgt.id}`;
+      if (validSet.has(key)) {
+        edges.push({
+          source: src.id, target: tgt.id,
+          sourceId: src.id, targetId: tgt.id,
+          kind: "valid",
+          bidirectional: validSet.has(`${tgt.id}\u2192${src.id}`),
+        });
+      }
+    }
   }
   return edges;
 }
@@ -520,7 +518,7 @@ function renderParticipantList() {
       input.focus();
       input.select();
 
-      function confirm() {
+      function commitRename() {
         const newName = input.value.trim();
         if (newName && newName !== p.name) {
           p.name = newName;
@@ -533,10 +531,10 @@ function renderParticipantList() {
         }
       }
       input.addEventListener("keydown", e => {
-        if (e.key === "Enter") { e.preventDefault(); confirm(); }
+        if (e.key === "Enter") { e.preventDefault(); commitRename(); }
         if (e.key === "Escape") { li.replaceChild(nameSpan, input); editBtn.disabled = false; }
       });
-      input.addEventListener("blur", confirm);
+      input.addEventListener("blur", commitRename);
     });
     li.appendChild(editBtn);
 
@@ -548,12 +546,7 @@ function renderParticipantList() {
       state.participants.splice(i, 1);
       state.relationships = state.relationships.filter(r => r.a !== p.id && r.b !== p.id);
       state.blocks = state.blocks.filter(b => b.from !== p.id && b.to !== p.id);
-      state.solutions = [];
-      state.selectedSolution = 0;
-      saveStateDebounced();
-      renderSidebar();
-      renderSolutionsPanel();
-      restartGraph();
+      mutated();
       updateEmptyState();
     });
     li.appendChild(removeBtn);
@@ -598,12 +591,7 @@ function makeBlockItem(b, i) {
   btn.title = "Remove block";
   btn.addEventListener("click", () => {
     state.blocks.splice(i, 1);
-    state.solutions = [];
-    state.selectedSolution = 0;
-    saveStateDebounced();
-    renderSidebar();
-    renderSolutionsPanel();
-    restartGraph();
+    mutated();
   });
   li.appendChild(btn);
   return li;
@@ -682,12 +670,7 @@ function renderBlockList() {
       e.stopPropagation();
       state.blocks = state.blocks.filter(b => b.group !== group.id);
       state.blockGroups = state.blockGroups.filter(g => g.id !== group.id);
-      state.solutions = [];
-      state.selectedSolution = 0;
-      saveStateDebounced();
-      renderSidebar();
-      renderSolutionsPanel();
-      restartGraph();
+      mutated();
     });
     header.appendChild(delBtn);
 
@@ -748,12 +731,7 @@ function renderRelationshipList() {
     btn.title = "Remove";
     btn.addEventListener("click", () => {
       state.relationships.splice(i, 1);
-      state.solutions = [];
-      state.selectedSolution = 0;
-      saveStateDebounced();
-      renderSidebar();
-      renderSolutionsPanel();
-      restartGraph();
+      mutated();
     });
     li.appendChild(btn);
     ul.appendChild(li);
@@ -778,6 +756,18 @@ function renderSidebar() {
 
   const errEl = document.getElementById("generate-error");
   errEl.textContent = state.error ?? "";
+
+  renderOptions();
+}
+
+// Called after any mutation that invalidates existing solutions.
+function mutated() {
+  state.solutions = [];
+  state.selectedSolution = 0;
+  saveStateDebounced();
+  renderSidebar();
+  renderSolutionsPanel();
+  restartGraph();
 }
 
 // ─── Solutions panel rendering ────────────────────────────────────────────────
@@ -862,7 +852,6 @@ async function onGenerate() {
     state.selectedSolution = 0;
     // Lock in the seed actually used so Download JSON reproduces the result.
     state.options.seed = resp.seed_used;
-    document.getElementById("opt-seed").value = resp.seed_used;
   } catch (err) {
     state.error = err.message;
     state.solutions = [];
@@ -899,12 +888,7 @@ function onAddAsHistoryBlocks() {
       state.blocks.push({ from: gifter_id, to: recipient_id, group: groupId });
     }
   }
-  state.solutions = [];
-  state.selectedSolution = 0;
-  saveStateDebounced();
-  renderSidebar();
-  renderSolutionsPanel();
-  restartGraph();
+  mutated();
 }
 
 function onDownload() {
@@ -961,7 +945,6 @@ async function onImport(file) {
 
   saveState();
   renderSidebar();
-  renderOptions();
   renderSolutionsPanel();
   restartGraph();
   updateEmptyState();
@@ -983,7 +966,6 @@ function onReset() {
   history.replaceState(null, "", location.pathname);
   document.getElementById("hash-banner").hidden = true;
   renderSidebar();
-  renderOptions();
   renderSolutionsPanel();
   restartGraph();
   updateEmptyState();
@@ -1026,13 +1008,8 @@ function wireEvents() {
     const existingIds = new Set(state.participants.map(p => p.id));
     const id = uniqueId(name, existingIds);
     state.participants.push({ id, name });
-    state.solutions = [];
-    state.selectedSolution = 0;
-    saveStateDebounced();
     nameInput.value = "";
-    renderSidebar();
-    renderSolutionsPanel();
-    restartGraph();
+    mutated();
     updateEmptyState();
   }
 
@@ -1047,12 +1024,7 @@ function wireEvents() {
     const key = [a, b].sort().join("|");
     if (state.relationships.some(r => [r.a, r.b].sort().join("|") === key)) return;
     state.relationships.push({ a, b });
-    state.solutions = [];
-    state.selectedSolution = 0;
-    saveStateDebounced();
-    renderSidebar();
-    renderSolutionsPanel();
-    restartGraph();
+    mutated();
   });
 
   // Add block
@@ -1062,12 +1034,7 @@ function wireEvents() {
     if (!from || !to || from === to) return;
     if (state.blocks.some(b => b.from === from && b.to === to)) return;
     state.blocks.push({ from, to });
-    state.solutions = [];
-    state.selectedSolution = 0;
-    saveStateDebounced();
-    renderSidebar();
-    renderSolutionsPanel();
-    restartGraph();
+    mutated();
   });
 
   // Options (read at solve time; update state on change)
@@ -1125,7 +1092,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   renderSidebar();
-  renderOptions();
   renderSolutionsPanel();
   restartGraph();
   updateEmptyState();
