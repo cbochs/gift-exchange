@@ -4,7 +4,7 @@
 /* ─── Tokens ─────────────────────────────────────────────────────────────────── */
 :root {
   --header-h: 46px;
-  --sidebar-w: 272px;
+  --sidebar-w: clamp(272px, 22vw, 360px);
   --solutions-h: 230px;
 
   --bg:        #f3f4f6;
@@ -173,6 +173,15 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 
 .edit-btn { font-size: 13px; margin-left: 4px; }
 .edit-btn:hover { color: var(--accent); }
+
+.toggle-btn { font-size: 9px; padding: 0; margin-right: 10px; }
+.toggle-btn:hover { color: var(--accent); }
+
+li.disabled .item-name,
+.block-group-header.disabled .item-name {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
 
 .rename-input {
   flex: 1;
@@ -465,6 +474,11 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   cursor: grab;
 }
 .node-circle:active { cursor: grabbing; }
+.node-circle.node-disabled {
+  stroke: var(--muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 3;
+}
 
 .node-label {
   font-size: 11px;
@@ -474,6 +488,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   pointer-events: none;
   user-select: none;
 }
+.node-label-disabled { fill: var(--muted); }
 
 .edge-valid {
   fill: none;

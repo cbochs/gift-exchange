@@ -39,8 +39,8 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 14 (F1–F5). Deselect solution by clicking active tab (selectedSolution supports null); toggle background edges via graph overlay checkbox; hash v3 encodes solution cycles + pres flag; decodeV3 reconstructs SolutionDTO; presentation mode collapses sidebar sections and shows context-aware banner on load.
-**Next action**: See `plans/phase9-required.md` for the future Required Assignments feature when ready to resume.
+**Last session**: Completed Phase 15 (E1–E8). Enable/disable toggle on participants, blocks, block groups, and relationships; disabled items filtered from solve; disabled participant nodes shown with dashed border in graph; associated blocks/relationships of disabled participants also shown as struck-out; hash v4 encodes disabled state. Also: sidebar width now fluid (clamp), block row alignment fixed, toggle button spacing tuned.
+**Next action**: See `plans/phase9-required.md` for Required Assignments, or `plans/phase16-backend-enrichment.md` for backend enrichment when ready.
 
 ---
 

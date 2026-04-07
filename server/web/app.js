@@ -68,22 +68,46 @@ export function buildValidEdges(participants, blocks) {
   return edges;
 }
 
+export function activeParticipants(state) {
+  return state.participants.filter(p => !p.disabled);
+}
+
 // Returns the union of explicit directed blocks and the two-direction expansion
-// of symmetric relationships. This is what gets sent to the API.
+// of symmetric relationships, with disabled items filtered out.
+// This is what gets sent to the API.
 export function effectiveBlocks(state) {
+  const disabledParticipantIds = new Set(
+    state.participants.filter(p => p.disabled).map(p => p.id)
+  );
+  const disabledGroupIds = new Set(
+    state.blockGroups.filter(g => g.disabled).map(g => g.id)
+  );
   return [
-    ...state.blocks.map(({ from, to }) => ({ from, to })),
-    ...state.relationships.flatMap(r => [
-      { from: r.a, to: r.b },
-      { from: r.b, to: r.a },
-    ]),
+    ...state.blocks
+      .filter(b =>
+        !b.disabled &&
+        !disabledGroupIds.has(b.group) &&
+        !disabledParticipantIds.has(b.from) &&
+        !disabledParticipantIds.has(b.to)
+      )
+      .map(({ from, to }) => ({ from, to })),
+    ...state.relationships
+      .filter(r =>
+        !r.disabled &&
+        !disabledParticipantIds.has(r.a) &&
+        !disabledParticipantIds.has(r.b)
+      )
+      .flatMap(r => [
+        { from: r.a, to: r.b },
+        { from: r.b, to: r.a },
+      ]),
   ];
 }
 
 export function stateToRequest(state) {
   const opts = { max_solutions: state.options.maxSolutions };
   if (state.options.seed != null) opts.seed = Number(state.options.seed);
-  return { participants: state.participants, blocks: effectiveBlocks(state), options: opts };
+  return { participants: activeParticipants(state), blocks: effectiveBlocks(state), options: opts };
 }
 
 // Populates state from an imported JSON document.
@@ -160,8 +184,14 @@ export function encodeStateToHash(state) {
   const ungrouped = state.blocks.filter(b => !b.group);
   const grouped   = state.blocks.filter(b =>  b.group);
 
+  const hasDisabled =
+    state.participants.some(p => p.disabled) ||
+    state.relationships.some(r => r.disabled) ||
+    state.blocks.some(b => b.disabled) ||
+    state.blockGroups.some(g => g.disabled);
+
   const compact = {
-    v: 3,
+    v: hasDisabled ? 4 : 3,
     p: state.participants.map(p => [p.id, p.name]),
     r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
     b: ungrouped.map(b => [idxOf[b.from], idxOf[b.to]]),
@@ -171,6 +201,20 @@ export function encodeStateToHash(state) {
     } : {}),
     pres: true,
   };
+
+  if (hasDisabled) {
+    const dp  = state.participants.map((p, i) => p.disabled ? i : -1).filter(i => i >= 0);
+    const dr  = state.relationships.map((r, i) => r.disabled ? i : -1).filter(i => i >= 0);
+    const db  = ungrouped.map((b, i) => b.disabled ? i : -1).filter(i => i >= 0);
+    const dg  = state.blockGroups.map((g, i) => g.disabled ? i : -1).filter(i => i >= 0);
+    const dbg = grouped.map((b, i) => b.disabled ? i : -1).filter(i => i >= 0);
+    if (dp.length)  compact.dp  = dp;
+    if (dr.length)  compact.dr  = dr;
+    if (db.length)  compact.db  = db;
+    if (dg.length)  compact.dg  = dg;
+    if (dbg.length) compact.dbg = dbg;
+  }
+
   if (state.options.maxSolutions !== 5 || state.options.seed != null) {
     compact.o = {};
     if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
@@ -180,11 +224,12 @@ export function encodeStateToHash(state) {
   if (sol) {
     compact.c = sol.cycles.map(cycle => cycle.map(id => idxOf[id]));
   }
-  return "#v3:" + hashEncode(compact);
+  return `#v${compact.v}:` + hashEncode(compact);
 }
 
 export function decodeStateFromHash(hash) {
   try {
+    if (hash.startsWith("#v4:")) return decodeV4(hashDecode(hash.slice(4)));
     if (hash.startsWith("#v3:")) return decodeV3(hashDecode(hash.slice(4)));
     if (hash.startsWith("#v2:")) return decodeV2(hashDecode(hash.slice(4)));
     if (hash.startsWith("#v1:")) return decodeV1(hashDecode(hash.slice(4)));
@@ -254,11 +299,8 @@ function decodeV2(compact) {
   return parseV2Fields(compact);
 }
 
-function decodeV3(compact) {
-  if (compact.v !== 3 || !Array.isArray(compact.p)) return null;
-  const base = parseV2Fields(compact);
-  if (!base) return null;
-
+// Reconstruct _solutions and _presentation from a compact object (v3/v4).
+function applyV3Fields(compact, base) {
   const result = { ...base, _presentation: compact.pres === true };
 
   if (Array.isArray(compact.c) && compact.c.length > 0) {
@@ -283,6 +325,31 @@ function decodeV3(compact) {
       result._selected_solution = 0;
     }
   }
+
+  return result;
+}
+
+function decodeV3(compact) {
+  if (compact.v !== 3 || !Array.isArray(compact.p)) return null;
+  const base = parseV2Fields(compact);
+  if (!base) return null;
+  return applyV3Fields(compact, base);
+}
+
+function decodeV4(compact) {
+  if (compact.v !== 4 || !Array.isArray(compact.p)) return null;
+  const base = parseV2Fields(compact);
+  if (!base) return null;
+  const result = applyV3Fields(compact, base);
+
+  // Apply disabled indices
+  (compact.dp  ?? []).forEach(i => { if (result.participants[i])  result.participants[i].disabled = true; });
+  (compact.dr  ?? []).forEach(i => { if (result.relationships[i]) result.relationships[i].disabled = true; });
+  const ungroupedBlocks = result.blocks.filter(b => !b.group);
+  const groupedBlocks   = result.blocks.filter(b =>  b.group);
+  (compact.db  ?? []).forEach(i => { if (ungroupedBlocks[i]) ungroupedBlocks[i].disabled = true; });
+  (compact.dg  ?? []).forEach(i => { if (result.blockGroups[i]) result.blockGroups[i].disabled = true; });
+  (compact.dbg ?? []).forEach(i => { if (groupedBlocks[i])   groupedBlocks[i].disabled = true; });
 
   return result;
 }
@@ -464,7 +531,7 @@ function restartGraph() {
     svgSel.call(zoomBehavior.transform, d3.zoomIdentity);
     prevNodeIdSet = nodeIdSet;
   }
-  const validEdges = buildValidEdges(state.participants, effectiveBlocks(state));
+  const validEdges = buildValidEdges(activeParticipants(state), effectiveBlocks(state));
   const solutionEdges = buildSolutionEdges(state.solutions[state.selectedSolution]);
   const nodeColors = buildNodeColors(state.solutions[state.selectedSolution]);
 
@@ -490,6 +557,7 @@ function restartGraph() {
     .attr("marker-end", d => `url(#arrow-cycle-${d.cycleIdx % CYCLE_COLORS.length})`);
 
   // Node circles
+  const disabledIds = new Set(state.participants.filter(p => p.disabled).map(p => p.id));
   nodeCircleLayer.selectAll("circle")
     .data(nodes, d => d.id)
     .join(
@@ -498,13 +566,15 @@ function restartGraph() {
         .attr("r", NODE_RADIUS)
         .call(drag),
     )
-    .attr("fill", d => nodeColors[d.id] ?? "#d1d5db");
+    .attr("fill", d => disabledIds.has(d.id) ? "#e5e7eb" : (nodeColors[d.id] ?? "#d1d5db"))
+    .classed("node-disabled", d => disabledIds.has(d.id));
 
   // Labels (separate layer so they render above circles)
   nodeLabelLayer.selectAll("text")
     .data(nodes, d => d.id)
     .join("text")
     .attr("class", "node-label")
+    .classed("node-label-disabled", d => disabledIds.has(d.id))
     .text(d => d.name);
 
   // Only valid edges drive the physics layout
@@ -528,8 +598,12 @@ function recolorGraph() {
     .attr("marker-end", d => `url(#arrow-cycle-${d.cycleIdx % CYCLE_COLORS.length})`)
     .attr("d", arcPath);
 
+  const disabledIds = new Set(state.participants.filter(p => p.disabled).map(p => p.id));
   nodeCircleLayer.selectAll("circle")
-    .attr("fill", d => nodeColors[d.id] ?? "#d1d5db");
+    .attr("fill", d => disabledIds.has(d.id) ? "#e5e7eb" : (nodeColors[d.id] ?? "#d1d5db"))
+    .classed("node-disabled", d => disabledIds.has(d.id));
+  nodeLabelLayer.selectAll("text")
+    .classed("node-label-disabled", d => disabledIds.has(d.id));
 }
 
 // ─── Sidebar rendering ────────────────────────────────────────────────────────
@@ -537,15 +611,28 @@ function recolorGraph() {
 function renderParticipantList() {
   const ul = document.getElementById("participant-list");
   ul.innerHTML = "";
+  const activeN = activeParticipants(state).length;
+  const atCap = activeN >= MAX_PARTICIPANTS;
   const n = state.participants.length;
-  const atCap = n >= MAX_PARTICIPANTS;
-  document.getElementById("participant-count").textContent = n > 0 ? `${n} / ${MAX_PARTICIPANTS}` : "";
+  document.getElementById("participant-count").textContent = n > 0 ? `${activeN} / ${MAX_PARTICIPANTS}` : "";
   document.getElementById("new-participant-name").disabled = atCap;
   document.getElementById("btn-add-participant").disabled = atCap;
   state.participants.forEach((p, i) => {
     const li = document.createElement("li");
+    if (p.disabled) li.classList.add("disabled");
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "icon-btn toggle-btn";
+    toggleBtn.textContent = p.disabled ? "○" : "●";
+    toggleBtn.title = p.disabled ? "Enable participant" : "Disable participant";
+    toggleBtn.addEventListener("click", () => {
+      p.disabled = p.disabled ? undefined : true;
+      mutated();
+    });
+    li.appendChild(toggleBtn);
 
     const nameSpan = document.createElement("span");
+    nameSpan.className = "item-name";
     nameSpan.textContent = p.name;
     nameSpan.style.flex = "1";
     li.appendChild(nameSpan);
@@ -628,9 +715,31 @@ function renderBlockDropdowns() {
 
 function makeBlockItem(b, i) {
   const fromName = state.participants.find(p => p.id === b.from)?.name ?? b.from;
-  const toName = state.participants.find(p => p.id === b.to)?.name ?? b.to;
+  const toName   = state.participants.find(p => p.id === b.to)?.name ?? b.to;
   const li = document.createElement("li");
-  li.innerHTML = `<span>${esc(fromName)} → ${esc(toName)}</span>`;
+
+  const groupDisabled = b.group && state.blockGroups.find(g => g.id === b.group)?.disabled;
+  const participantDisabled = state.participants.find(p => p.id === b.from)?.disabled ||
+                              state.participants.find(p => p.id === b.to)?.disabled;
+  if (b.disabled || groupDisabled || participantDisabled) li.classList.add("disabled");
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.className = "icon-btn toggle-btn";
+  toggleBtn.textContent = b.disabled ? "○" : "●";
+  toggleBtn.title = b.disabled ? "Enable block" : "Disable block";
+  toggleBtn.disabled = !!groupDisabled;
+  toggleBtn.addEventListener("click", () => {
+    b.disabled = b.disabled ? undefined : true;
+    mutated();
+  });
+  li.appendChild(toggleBtn);
+
+  const span = document.createElement("span");
+  span.className = "item-name";
+  span.style.flex = "1";
+  span.textContent = `${fromName} → ${toName}`;
+  li.appendChild(span);
+
   const btn = document.createElement("button");
   btn.className = "icon-btn remove-btn";
   btn.textContent = "×";
@@ -661,6 +770,7 @@ function renderBlockList() {
     // Group header
     const header = document.createElement("div");
     header.className = "block-group-header";
+    if (group.disabled) header.classList.add("disabled");
 
     const toggle = document.createElement("span");
     toggle.className = "block-group-toggle";
@@ -668,9 +778,21 @@ function renderBlockList() {
     header.appendChild(toggle);
 
     const labelSpan = document.createElement("span");
-    labelSpan.className = "block-group-label";
+    labelSpan.className = "block-group-label item-name";
     labelSpan.textContent = group.label;
     header.appendChild(labelSpan);
+
+    // Enable/disable group button
+    const enableBtn = document.createElement("button");
+    enableBtn.className = "icon-btn toggle-btn";
+    enableBtn.textContent = group.disabled ? "○" : "●";
+    enableBtn.title = group.disabled ? "Enable group" : "Disable group";
+    enableBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      group.disabled = group.disabled ? undefined : true;
+      mutated();
+    });
+    header.appendChild(enableBtn);
 
     // Edit button
     const editBtn = document.createElement("button");
@@ -770,7 +892,26 @@ function renderRelationshipList() {
     const aName = state.participants.find(p => p.id === r.a)?.name ?? r.a;
     const bName = state.participants.find(p => p.id === r.b)?.name ?? r.b;
     const li = document.createElement("li");
-    li.innerHTML = `<span>${esc(aName)} ↔ ${esc(bName)}</span>`;
+    const participantDisabled = state.participants.find(p => p.id === r.a)?.disabled ||
+                                state.participants.find(p => p.id === r.b)?.disabled;
+    if (r.disabled || participantDisabled) li.classList.add("disabled");
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "icon-btn toggle-btn";
+    toggleBtn.textContent = r.disabled ? "○" : "●";
+    toggleBtn.title = r.disabled ? "Enable relationship" : "Disable relationship";
+    toggleBtn.addEventListener("click", () => {
+      r.disabled = r.disabled ? undefined : true;
+      mutated();
+    });
+    li.appendChild(toggleBtn);
+
+    const span = document.createElement("span");
+    span.className = "item-name";
+    span.textContent = `${aName} ↔ ${bName}`;
+    span.style.flex = "1";
+    li.appendChild(span);
+
     const btn = document.createElement("button");
     btn.className = "icon-btn remove-btn";
     btn.textContent = "×";
