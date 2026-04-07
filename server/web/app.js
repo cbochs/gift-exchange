@@ -23,7 +23,6 @@ const state = {
   loading: false,
   error: null,
 };
-window._state = state;
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
@@ -974,6 +973,7 @@ function onReset() {
   state.participants = [];
   state.relationships = [];
   state.blocks = [];
+  state.blockGroups = [];
   state.options = { maxSolutions: 5, seed: null };
   state.solutions = [];
   state.selectedSolution = 0;
