@@ -2,17 +2,17 @@
 
 ## Status
 
-- [ ] **B1** — Fix `onReset` not clearing `blockGroups`
-- [ ] **B2** — Remove `window._state` debug artifact
-- [ ] **S1** — Extract `mutated()` helper to DRY mutation/re-render sequences
-- [ ] **S2** — Fold `renderOptions()` into `renderSidebar()`; remove manual seed DOM update
-- [ ] **S3** — Rename `confirm` local variable to avoid shadowing global
-- [ ] **S4** — Simplify `buildValidEdges` to remove string round-trip
-- [ ] **H1** — Fix `<ul id="block-list">` invalid children: change to `<div>`
-- [ ] **C1** — Extract `--accent-ring` CSS custom property
-- [ ] **C2** — Unify `.edit-btn` / `.remove-btn` into a shared `.icon-btn` base class
-- [ ] **C3** — Remove redundant `.btn-primary:disabled` rule
-- [ ] **C4** — Add CSS tokens for hash-banner colors
+- [x] **B1** — Fix `onReset` not clearing `blockGroups`
+- [x] **B2** — Remove `window._state` debug artifact
+- [x] **S1** — Extract `mutated()` helper to DRY mutation/re-render sequences
+- [x] **S2** — Fold `renderOptions()` into `renderSidebar()`; remove manual seed DOM update
+- [x] **S3** — Rename `confirm` local variable to avoid shadowing global
+- [x] **S4** — Simplify `buildValidEdges` to remove string round-trip
+- [x] **H1** — Fix `<ul id="block-list">` invalid children: change to `<div>`
+- [x] **C1** — Extract `--accent-ring` CSS custom property
+- [x] **C2** — Unify `.edit-btn` / `.remove-btn` into a shared `.icon-btn` base class
+- [x] **C3** — Remove redundant `.btn-primary:disabled` rule
+- [x] **C4** — Add CSS tokens for hash-banner colors
 
 All changes are frontend-only (`server/web/`). No Go changes, no API changes,
 no behavior changes visible to users.

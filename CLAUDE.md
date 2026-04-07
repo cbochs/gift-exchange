@@ -39,7 +39,7 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 10 (P1–P5). LocalStorage save/load on every input mutation; Reset button clears state + storage + hash; compact `#v1:<base64url>` URL encoding with integer indices (`encodeStateToHash`/`decodeStateFromHash`); on-load hash detection with URL-priority over localStorage; hash cleared from URL after apply; "Copy Link" button with clipboard feedback; shared-link banner (full-width, auto-dismiss, `:not([hidden])` CSS fix).
+**Last session**: Completed Phase 13 (B1–B2, S1–S4, H1, C1–C4). Bug fixes: blockGroups cleared on reset, window._state removed. JS: mutated() helper DRYing 8 call sites, renderOptions folded into renderSidebar, confirm renamed to commitRename, buildValidEdges simplified. HTML: ul#block-list → div. CSS: --accent-ring/--banner-* tokens, .icon-btn base class, redundant .btn-primary:disabled removed.
 **Next action**: See `plans/phase9-required.md` for the future Required Assignments feature when ready to resume.
 
 ---

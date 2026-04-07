@@ -18,7 +18,7 @@
 - **Required Assignments** (`plans/phase9-required.md`): Force specific gifter→recipient pairs in every solution. Full-stack feature spanning lib, server, and frontend.
 - **UI Polish** (`plans/phase11-ui-polish.md`): Solutions panel two-row layout, D3 zoom/pan, disconnected-graph gravity fix, 20-person participant cap. Frontend-only.
 - [x] **Phase 12 — Rename & Block Groups**: Participant rename (stable IDs), block groups with collapsible UI, history blocks create named groups, URL hash v2 format. Frontend-only.
-- [ ] **Phase 13 — Frontend Cleanup**: Two bug fixes, four JS structural improvements, one HTML validity fix, four CSS cleanup items. No behavior changes except B1. Frontend-only.
+- [x] **Phase 13 — Frontend Cleanup**: Two bug fixes, four JS structural improvements, one HTML validity fix, four CSS cleanup items. No behavior changes except B1. Frontend-only.
 
 ---
 
