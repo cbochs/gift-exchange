@@ -131,6 +131,7 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 .block-group-toggle { flex-shrink: 0; font-size: 9px; }
 .block-group-label  { flex: 1; }
 .block-group-inner  { list-style: none; padding-left: 10px; display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.block-group-inner[hidden] { display: none; }
 
 #participant-list li,
 #relationship-list li,

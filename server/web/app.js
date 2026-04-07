@@ -828,9 +828,21 @@ async function onGenerate() {
 function onAddAsHistoryBlocks() {
   const sol = state.solutions[state.selectedSolution];
   if (!sol) return;
+
+  // Build a unique label for today, e.g. "History 2026-04-06" or "History 2026-04-06 (2)"
+  const today = new Date().toISOString().slice(0, 10);
+  const baseLabel = `History ${today}`;
+  const existingLabels = new Set(state.blockGroups.map(g => g.label));
+  let label = baseLabel;
+  for (let n = 2; existingLabels.has(label); n++) label = `${baseLabel} (${n})`;
+
+  const existingGroupIds = new Set(state.blockGroups.map(g => g.id));
+  const groupId = uniqueId(slugify(label), existingGroupIds);
+  state.blockGroups.push({ id: groupId, label, collapsed: false });
+
   for (const { gifter_id, recipient_id } of sol.assignments) {
     if (!state.blocks.some(b => b.from === gifter_id && b.to === recipient_id)) {
-      state.blocks.push({ from: gifter_id, to: recipient_id });
+      state.blocks.push({ from: gifter_id, to: recipient_id, group: groupId });
     }
   }
   state.solutions = [];
@@ -846,6 +858,7 @@ function onDownload() {
     participants: state.participants,
     ...(state.relationships.length ? { relationships: state.relationships } : {}),
     blocks: state.blocks,
+    ...(state.blockGroups.length ? { blockGroups: state.blockGroups } : {}),
     options: {
       max_solutions: state.options.maxSolutions,
       ...(state.options.seed != null ? { seed: state.options.seed } : {}),
