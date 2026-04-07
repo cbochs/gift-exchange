@@ -161,7 +161,7 @@ export function encodeStateToHash(state) {
   const grouped   = state.blocks.filter(b =>  b.group);
 
   const compact = {
-    v: 2,
+    v: 3,
     p: state.participants.map(p => [p.id, p.name]),
     r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
     b: ungrouped.map(b => [idxOf[b.from], idxOf[b.to]]),
@@ -169,17 +169,23 @@ export function encodeStateToHash(state) {
       g: state.blockGroups.map(g => g.label),
       bg: grouped.map(b => [idxOf[b.from], idxOf[b.to], groupIdxOf[b.group]]),
     } : {}),
+    pres: true,
   };
   if (state.options.maxSolutions !== 5 || state.options.seed != null) {
     compact.o = {};
     if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
     if (state.options.seed != null) compact.o.s = state.options.seed;
   }
-  return "#v2:" + hashEncode(compact);
+  const sol = state.solutions[state.selectedSolution];
+  if (sol) {
+    compact.c = sol.cycles.map(cycle => cycle.map(id => idxOf[id]));
+  }
+  return "#v3:" + hashEncode(compact);
 }
 
 export function decodeStateFromHash(hash) {
   try {
+    if (hash.startsWith("#v3:")) return decodeV3(hashDecode(hash.slice(4)));
     if (hash.startsWith("#v2:")) return decodeV2(hashDecode(hash.slice(4)));
     if (hash.startsWith("#v1:")) return decodeV1(hashDecode(hash.slice(4)));
     return null;
@@ -188,29 +194,11 @@ export function decodeStateFromHash(hash) {
   }
 }
 
-function decodeV1(compact) {
-  if (compact.v !== 1 || !Array.isArray(compact.p)) return null;
-  const participants = compact.p.map(([id, name]) => ({ id, name }));
-  const blocks = (compact.b ?? [])
-    .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
-    .filter(b => b.from != null && b.to != null);
-  const relationships = (compact.r ?? [])
-    .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
-    .filter(r => r.a != null && r.b != null);
-  return {
-    participants, blocks, relationships, blockGroups: [],
-    options: {
-      max_solutions: compact.o?.m ?? 5,
-      ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
-    },
-  };
-}
-
-function decodeV2(compact) {
-  if (compact.v !== 2 || !Array.isArray(compact.p)) return null;
+// Shared participant/block/relationship/group/options parsing used by v2 and v3.
+function parseV2Fields(compact) {
+  if (!Array.isArray(compact.p)) return null;
   const participants = compact.p.map(([id, name]) => ({ id, name }));
 
-  // Rebuild blockGroups from labels, assigning fresh IDs
   const groupLabels = compact.g ?? [];
   const existingGroupIds = new Set();
   const blockGroups = groupLabels.map(label => {
@@ -241,6 +229,62 @@ function decodeV2(compact) {
       ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
     },
   };
+}
+
+function decodeV1(compact) {
+  if (compact.v !== 1 || !Array.isArray(compact.p)) return null;
+  const participants = compact.p.map(([id, name]) => ({ id, name }));
+  const blocks = (compact.b ?? [])
+    .map(([fi, ti]) => ({ from: participants[fi]?.id, to: participants[ti]?.id }))
+    .filter(b => b.from != null && b.to != null);
+  const relationships = (compact.r ?? [])
+    .map(([ai, bi]) => ({ a: participants[ai]?.id, b: participants[bi]?.id }))
+    .filter(r => r.a != null && r.b != null);
+  return {
+    participants, blocks, relationships, blockGroups: [],
+    options: {
+      max_solutions: compact.o?.m ?? 5,
+      ...(compact.o?.s != null ? { seed: compact.o.s } : {}),
+    },
+  };
+}
+
+function decodeV2(compact) {
+  if (compact.v !== 2 || !Array.isArray(compact.p)) return null;
+  return parseV2Fields(compact);
+}
+
+function decodeV3(compact) {
+  if (compact.v !== 3 || !Array.isArray(compact.p)) return null;
+  const base = parseV2Fields(compact);
+  if (!base) return null;
+
+  const result = { ...base, _presentation: compact.pres === true };
+
+  if (Array.isArray(compact.c) && compact.c.length > 0) {
+    const { participants } = base;
+    const cycles = compact.c
+      .map(idxs => idxs.map(i => participants[i]?.id).filter(Boolean))
+      .filter(c => c.length > 0);
+
+    if (cycles.length > 0) {
+      const assignments = cycles.flatMap(cycle =>
+        cycle.map((id, i) => ({
+          gifter_id: id,
+          recipient_id: cycle[(i + 1) % cycle.length],
+        }))
+      );
+      const lens = cycles.map(c => c.length);
+      result._solutions = [{ cycles, assignments, score: {
+        min_cycle_len: Math.min(...lens),
+        num_cycles: cycles.length,
+        max_cycle_len: Math.max(...lens),
+      }}];
+      result._selected_solution = 0;
+    }
+  }
+
+  return result;
 }
 
 function esc(s) {
@@ -994,8 +1038,12 @@ async function onCopyLink() {
   }
 }
 
-function showHashBanner() {
+function showHashBanner(isPresentation, hasSolution) {
   const el = document.getElementById("hash-banner");
+  document.getElementById("hash-banner-msg").innerHTML =
+    (isPresentation && hasSolution)
+      ? "Viewing a shared solution — click <strong>Generate</strong> to re-solve, or edit freely."
+      : "Loaded from a shared link — click <strong>Generate</strong> to solve, or edit freely.";
   el.hidden = false;
   const dismissTimer = setTimeout(() => { el.hidden = true; }, 8000);
   el.querySelector(".hash-banner-dismiss").addEventListener("click", () => {
@@ -1103,7 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hashState?.participants.length) {
     history.replaceState(null, "", location.pathname);
     applyImport(hashState, state);
-    showHashBanner();
+    showHashBanner(hashState._presentation, hashState._solutions?.length > 0);
   } else {
     loadFromLocalStorage();
   }
@@ -1112,4 +1160,9 @@ document.addEventListener("DOMContentLoaded", () => {
   renderSolutionsPanel();
   restartGraph();
   updateEmptyState();
+
+  if (hashState?._presentation) {
+    document.querySelectorAll("details.sidebar-section")
+      .forEach(el => el.removeAttribute("open"));
+  }
 });
