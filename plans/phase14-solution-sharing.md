@@ -135,18 +135,22 @@ showValidEdges: true,
 This is session-only. It is **not** persisted to localStorage and **not**
 encoded in the hash (it is a display preference, not problem state).
 
-### Graph overlay button
+### Graph overlay control
 
-A small toggle button is overlaid in the top-right corner of
-`#graph-container`, spatially connected to what it controls.
+A checkbox-label pair is overlaid in the top-right corner of
+`#graph-container`. Using a native `<input type="checkbox">` keeps the
+checked/unchecked state as the source of truth — no JS needed to update
+label text, and the browser renders the toggle natively.
 
 **`index.html`** — inside `#graph-container`, after `#graph-empty`:
 
 ```html
-<button id="btn-toggle-edges" class="graph-overlay-btn">Hide edges</button>
+<label class="graph-overlay-btn">
+  <input type="checkbox" id="chk-show-edges" checked> Show edges
+</label>
 ```
 
-Label alternates: "Hide edges" when edges are visible, "Show edges" when hidden.
+The checkbox starts checked (edges visible by default).
 
 **`style.css`** — new rule in the graph section:
 
@@ -155,11 +159,20 @@ Label alternates: "Hide edges" when edges are visible, "Show edges" when hidden.
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   padding: 3px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
   opacity: 0.7;
+  user-select: none;
 }
 .graph-overlay-btn:hover { opacity: 1; }
+.graph-overlay-btn input[type="checkbox"] { cursor: pointer; }
 ```
 
 ### Wire event
@@ -167,10 +180,8 @@ Label alternates: "Hide edges" when edges are visible, "Show edges" when hidden.
 In `wireEvents()`:
 
 ```js
-document.getElementById("btn-toggle-edges").addEventListener("click", () => {
-  state.showValidEdges = !state.showValidEdges;
-  document.getElementById("btn-toggle-edges").textContent =
-    state.showValidEdges ? "Hide edges" : "Show edges";
+document.getElementById("chk-show-edges").addEventListener("change", e => {
+  state.showValidEdges = e.target.checked;
   validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 });
 ```
@@ -316,8 +327,10 @@ not a crash.
 
 When `hashState._presentation` is true, remove the `open` attribute from
 all `<details class="sidebar-section">` elements after the initial render.
-This is done after `renderSidebar()` so the render itself doesn't need to
-know about presentation mode.
+This collapses each section (Participants, Relationships, Blocks, Options)
+to its summary row — the sidebar panel itself remains visible and unchanged.
+The collapse is applied after `renderSidebar()` so the render itself doesn't
+need to know about presentation mode.
 
 ```js
 if (hashState?._presentation) {
@@ -411,12 +424,11 @@ if (hashState?._presentation) {
   `[]` / `{}` without throwing.
 
 ### F2
-- Clicking the overlay button hides the grey valid-edge paths; button reads
-  "Show edges".
-- Clicking again shows them; button reads "Hide edges".
+- Unchecking the overlay checkbox hides the grey valid-edge paths.
+- Re-checking shows them.
 - Coloured solution edges are unaffected by the toggle.
 - After `restartGraph()` (e.g., participant added), valid edge visibility
-  reflects the current toggle state.
+  reflects the current checkbox state.
 
 ### F3
 - `encodeStateToHash` emits a `#v3:` hash with `pres: true` in all cases.
