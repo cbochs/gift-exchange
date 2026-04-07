@@ -107,6 +107,31 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
   margin-bottom: 8px;
 }
 
+/* Block groups */
+.block-group-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.block-group-header .edit-btn,
+.block-group-header .remove-btn {
+  font-size: 12px;
+  margin-left: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.block-group-header:hover .edit-btn,
+.block-group-header:hover .remove-btn { opacity: 1; }
+.block-group-toggle { flex-shrink: 0; font-size: 9px; }
+.block-group-label  { flex: 1; }
+.block-group-inner  { list-style: none; padding-left: 10px; display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+
 #participant-list li,
 #relationship-list li,
 #block-list li {

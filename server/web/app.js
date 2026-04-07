@@ -12,7 +12,8 @@ const MAX_PARTICIPANTS = 20;
 const state = {
   participants: [],    // [{id, name}]
   relationships: [],   // [{a, b}] symmetric pairs — expanded to two blocks at API call time
-  blocks: [],          // [{from, to}] directed blocks
+  blocks: [],          // [{from, to, group?}] directed blocks
+  blockGroups: [],     // [{id, label, collapsed}] ordered group metadata
   options: {
     maxSolutions: 5,
     seed: null,        // null = random
@@ -22,6 +23,7 @@ const state = {
   loading: false,
   error: null,
 };
+window._state = state;
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
@@ -72,7 +74,7 @@ export function buildValidEdges(participants, blocks) {
 // of symmetric relationships. This is what gets sent to the API.
 export function effectiveBlocks(state) {
   return [
-    ...state.blocks,
+    ...state.blocks.map(({ from, to }) => ({ from, to })),
     ...state.relationships.flatMap(r => [
       { from: r.a, to: r.b },
       { from: r.b, to: r.a },
@@ -92,6 +94,7 @@ export function applyImport(doc, state) {
   state.participants = doc.participants ?? [];
   state.relationships = doc.relationships ?? [];
   state.blocks = doc.blocks ?? [];
+  state.blockGroups = doc.blockGroups ?? [];
   state.options.maxSolutions = doc.options?.max_solutions ?? 5;
   state.options.seed = doc.options?.seed ?? null;
   if (doc._solutions?.length) {
@@ -120,6 +123,7 @@ function saveState() {
       participants: state.participants,
       relationships: state.relationships,
       blocks: state.blocks,
+      blockGroups: state.blockGroups,
       options: {
         max_solutions: state.options.maxSolutions,
         ...(state.options.seed != null ? { seed: state.options.seed } : {}),
@@ -529,20 +533,101 @@ function renderBlockDropdowns() {
   document.getElementById("btn-add-block").disabled = disabled;
 }
 
+function makeBlockItem(b, i) {
+  const fromName = state.participants.find(p => p.id === b.from)?.name ?? b.from;
+  const toName = state.participants.find(p => p.id === b.to)?.name ?? b.to;
+  const li = document.createElement("li");
+  li.innerHTML = `<span>${esc(fromName)} → ${esc(toName)}</span>`;
+  const btn = document.createElement("button");
+  btn.className = "remove-btn";
+  btn.textContent = "×";
+  btn.title = "Remove block";
+  btn.addEventListener("click", () => {
+    state.blocks.splice(i, 1);
+    state.solutions = [];
+    state.selectedSolution = 0;
+    saveStateDebounced();
+    renderSidebar();
+    renderSolutionsPanel();
+    restartGraph();
+  });
+  li.appendChild(btn);
+  return li;
+}
+
 function renderBlockList() {
   const ul = document.getElementById("block-list");
   ul.innerHTML = "";
+
+  // Ungrouped blocks first
   state.blocks.forEach((b, i) => {
-    const fromName = state.participants.find(p => p.id === b.from)?.name ?? b.from;
-    const toName = state.participants.find(p => p.id === b.to)?.name ?? b.to;
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${esc(fromName)} → ${esc(toName)}</span>`;
-    const btn = document.createElement("button");
-    btn.className = "remove-btn";
-    btn.textContent = "×";
-    btn.title = "Remove";
-    btn.addEventListener("click", () => {
-      state.blocks.splice(i, 1);
+    if (!b.group) ul.appendChild(makeBlockItem(b, i));
+  });
+
+  // Then each group in order
+  state.blockGroups.forEach(group => {
+    const groupBlocks = state.blocks
+      .map((b, i) => ({ b, i }))
+      .filter(({ b }) => b.group === group.id);
+
+    // Group header
+    const header = document.createElement("div");
+    header.className = "block-group-header";
+
+    const toggle = document.createElement("span");
+    toggle.className = "block-group-toggle";
+    toggle.textContent = group.collapsed ? "▸" : "▾";
+    header.appendChild(toggle);
+
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "block-group-label";
+    labelSpan.textContent = group.label;
+    header.appendChild(labelSpan);
+
+    // Edit button
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn";
+    editBtn.textContent = "✎";
+    editBtn.title = "Rename group";
+    editBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = group.label;
+      input.className = "rename-input";
+      header.replaceChild(input, labelSpan);
+      editBtn.disabled = true;
+      input.focus();
+      input.select();
+
+      function confirmRename() {
+        const newLabel = input.value.trim();
+        if (newLabel && newLabel !== group.label) {
+          group.label = newLabel;
+          saveStateDebounced();
+          renderSidebar();
+        } else {
+          header.replaceChild(labelSpan, input);
+          editBtn.disabled = false;
+        }
+      }
+      input.addEventListener("keydown", e2 => {
+        if (e2.key === "Enter") { e2.preventDefault(); confirmRename(); }
+        if (e2.key === "Escape") { header.replaceChild(labelSpan, input); editBtn.disabled = false; }
+      });
+      input.addEventListener("blur", confirmRename);
+    });
+    header.appendChild(editBtn);
+
+    // Delete group button
+    const delBtn = document.createElement("button");
+    delBtn.className = "remove-btn";
+    delBtn.textContent = "×";
+    delBtn.title = "Delete group and all its blocks";
+    delBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      state.blocks = state.blocks.filter(b => b.group !== group.id);
+      state.blockGroups = state.blockGroups.filter(g => g.id !== group.id);
       state.solutions = [];
       state.selectedSolution = 0;
       saveStateDebounced();
@@ -550,8 +635,23 @@ function renderBlockList() {
       renderSolutionsPanel();
       restartGraph();
     });
-    li.appendChild(btn);
-    ul.appendChild(li);
+    header.appendChild(delBtn);
+
+    // Toggle collapse on header click (not on buttons)
+    header.addEventListener("click", () => {
+      group.collapsed = !group.collapsed;
+      saveStateDebounced();
+      renderBlockList();
+    });
+
+    ul.appendChild(header);
+
+    // Inner list
+    const inner = document.createElement("ul");
+    inner.className = "block-group-inner";
+    if (group.collapsed) inner.hidden = true;
+    groupBlocks.forEach(({ b, i }) => inner.appendChild(makeBlockItem(b, i)));
+    ul.appendChild(inner);
   });
 }
 
