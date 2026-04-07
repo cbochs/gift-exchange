@@ -763,7 +763,7 @@ function renderSidebar() {
 // Called after any mutation that invalidates existing solutions.
 function mutated() {
   state.solutions = [];
-  state.selectedSolution = 0;
+  state.selectedSolution = null;
   saveStateDebounced();
   renderSidebar();
   renderSolutionsPanel();
@@ -778,6 +778,7 @@ function renderSolutionsPanel() {
   const histBtn = document.getElementById("btn-add-history");
   const dlBtn = document.getElementById("btn-download");
 
+  // Phase 1: no solutions at all
   if (!state.solutions.length) {
     tabsEl.innerHTML = "";
     detailEl.innerHTML = "";
@@ -786,22 +787,30 @@ function renderSolutionsPanel() {
     return;
   }
 
-  // Tabs
+  // Tabs (phases 2 and 3)
   tabsEl.innerHTML = "";
   state.solutions.forEach((_, i) => {
     const btn = document.createElement("button");
     btn.className = "tab-btn" + (i === state.selectedSolution ? " active" : "");
     btn.textContent = `Sol ${i + 1}`;
     btn.addEventListener("click", () => {
-      state.selectedSolution = i;
+      state.selectedSolution = state.selectedSolution === i ? null : i;
       renderSolutionsPanel();
       recolorGraph();
     });
     tabsEl.appendChild(btn);
   });
 
-  // Detail
+  // Phase 2: solutions exist but none selected
   const sol = state.solutions[state.selectedSolution];
+  if (!sol) {
+    detailEl.innerHTML = "";
+    histBtn.hidden = true;
+    dlBtn.hidden = true;
+    return;
+  }
+
+  // Phase 3: solution selected — render detail
   const { min_cycle_len, num_cycles, max_cycle_len } = sol.score;
   const nameOf = Object.fromEntries(state.participants.map(p => [p.id, p.name]));
   const cycleGroups = sol.cycles.map((cycle, ci) => {
