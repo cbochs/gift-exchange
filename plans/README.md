@@ -19,6 +19,7 @@
 - **UI Polish** (`plans/phase11-ui-polish.md`): Solutions panel two-row layout, D3 zoom/pan, disconnected-graph gravity fix, 20-person participant cap. Frontend-only.
 - [x] **Phase 12 — Rename & Block Groups**: Participant rename (stable IDs), block groups with collapsible UI, history blocks create named groups, URL hash v2 format. Frontend-only.
 - [x] **Phase 13 — Frontend Cleanup**: Two bug fixes, four JS structural improvements, one HTML validity fix, four CSS cleanup items. No behavior changes except B1. Frontend-only.
+- [ ] **Phase 14 — Solution Sharing & Graph UX**: Deselect solution (tab toggle), toggle background edges (graph overlay), hash v3 with solution cycles + presentation mode, "Copy Link" enrichment. Frontend-only.
 
 ---
 
