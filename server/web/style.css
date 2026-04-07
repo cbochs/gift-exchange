@@ -194,6 +194,14 @@ details.sidebar-section:not([open]) > summary::after { content: "▸"; }
 }
 .hint { color: var(--muted); font-size: 11px; font-weight: 400; }
 
+.section-count {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 /* Generate row */
 .generate-row {
   padding: 14px;
@@ -353,6 +361,7 @@ button {
   white-space: nowrap;
 }
 button:hover { background: var(--bg); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-primary {
   display: block;

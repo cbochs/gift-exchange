@@ -5,6 +5,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 const API_URL = "/api/v1/solve";
 const NODE_RADIUS = 20;
 const CYCLE_COLORS = ["#4c72b0", "#dd8452", "#55a868", "#c44e52", "#8172b2", "#937860"];
+const MAX_PARTICIPANTS = 20;
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -434,6 +435,11 @@ function recolorGraph() {
 function renderParticipantList() {
   const ul = document.getElementById("participant-list");
   ul.innerHTML = "";
+  const n = state.participants.length;
+  const atCap = n >= MAX_PARTICIPANTS;
+  document.getElementById("participant-count").textContent = n > 0 ? `${n} / ${MAX_PARTICIPANTS}` : "";
+  document.getElementById("new-participant-name").disabled = atCap;
+  document.getElementById("btn-add-participant").disabled = atCap;
   state.participants.forEach((p, i) => {
     const li = document.createElement("li");
     li.innerHTML = `<span>${esc(p.name)}</span>`;
@@ -808,6 +814,7 @@ function wireEvents() {
     const name = nameInput.value.trim();
     partErrEl.textContent = "";
     if (!name) return;
+    if (state.participants.length >= MAX_PARTICIPANTS) return;
     const existingIds = new Set(state.participants.map(p => p.id));
     const id = uniqueId(name, existingIds);
     state.participants.push({ id, name });
