@@ -62,19 +62,18 @@ func (o inputOptions) toLibOptions() ge.Options {
 // On output, Solutions and Feasible are populated; they are silently ignored
 // on re-read, making the output a valid input for a subsequent run.
 type inputDoc struct {
-	Participants []dto.ParticipantDTO `json:"participants"`
-	Blocks       []dto.BlockDTO       `json:"blocks,omitempty"`
-	Options      inputOptions         `json:"options"`
+	Participants  []dto.ParticipantDTO  `json:"participants"`
+	Blocks        []dto.BlockDTO        `json:"blocks,omitempty"`
+	Relationships []dto.RelationshipDTO `json:"relationships,omitempty"`
+	BlockGroups   []dto.BlockGroupDTO   `json:"block_groups,omitempty"`
+	Options       inputOptions          `json:"options"`
 	// Round-trip fields (written on output, ignored when re-used as input).
 	Solutions []dto.SolutionDTO `json:"solutions,omitempty"`
 	Feasible  *bool             `json:"feasible,omitempty"`
 }
 
 func (d *inputDoc) problem() ge.Problem {
-	return ge.Problem{
-		Participants: dto.ParticipantsToLib(d.Participants),
-		Blocks:       dto.BlocksToLib(d.Blocks),
-	}
+	return dto.BuildProblem(d.Participants, d.Blocks, d.Relationships, d.BlockGroups)
 }
 
 // ---------------------------------------------------------------------------
@@ -173,13 +172,14 @@ func cmdValidate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	if err := ge.Validate(doc.problem()); err != nil {
+	prob := doc.problem()
+	if err := ge.Validate(prob); err != nil {
 		fmt.Fprintln(stderr, "invalid:", err)
 		return 1
 	}
 
 	fmt.Fprintf(stdout, "Input is valid.\nParticipants: %d\nBlocks: %d\n",
-		len(doc.Participants), len(doc.Blocks))
+		len(prob.Participants), len(prob.Blocks))
 	return 0
 }
 

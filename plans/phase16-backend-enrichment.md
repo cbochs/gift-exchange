@@ -2,14 +2,14 @@
 
 ## Status
 
-> Not started. Planned after Phase 15.
+> Complete.
 
 ---
 
 ## Motivation
 
-The frontend currently owns three pieces of business logic that conceptually
-belong in the server:
+The frontend currently owns three pieces of business logic that belong in the shared
+Go layer:
 
 1. **Relationship expansion** — symmetric relationships are expanded into two
    directed blocks in `effectiveBlocks()` before the API call.
@@ -18,81 +18,32 @@ belong in the server:
 3. **Enable/disable filtering** — disabled participants, blocks, relationships,
    and groups are filtered out in `effectiveBlocks()` / `stateToRequest()`.
 
-Moving this logic to the server:
+Moving this logic into `internal/dto`:
 - Lets the frontend send its data model directly (no expansion/filtering code)
-- Creates a richer API that reflects the domain model
-- Positions the server to validate and reason about the input more fully
+- Gives the **CLI the same richer input format** — it can accept `relationships`
+  and `block_groups` in its JSON input with no additional work
+- Creates a single authoritative conversion from the rich domain model to the flat
+  lib input (`ge.Problem`), shared by all consumers
 
-This is a full-stack change touching the Go server and the JavaScript frontend.
-The solver library (`lib/`) is **not** changed — it still receives a flat list
-of participants and blocks.
-
----
-
-## Scope
-
-### What moves to the backend
-
-| Frontend today                     | After this phase                                |
-| ---------------------------------- | ----------------------------------------------- |
-| Expand relationships → 2 blocks    | Server expands in `dtoToProblem`                |
-| Filter disabled participants       | Server filters before calling lib.Solve         |
-| Filter disabled blocks/groups      | Server filters before calling lib.Solve         |
-| Flatten block groups               | Server flattens (block groups are metadata)     |
-
-### What stays in the frontend
-
-- Rendering all items including disabled ones (visual state management)
-- `mutated()` / solve invalidation logic
-- Graph building and visualization
+The lib (`lib/`) is **not changed** — it still receives a flat list of participants
+and blocks. The solver knows nothing about relationships, groups, or disabled state.
 
 ---
 
-## API Changes
+## Design
 
-### `server/api.go`
+### Why `internal/dto`, not `server/api.go`
 
-New types added to the request schema:
+Both the CLI (`cmd/giftexchange/main.go`) and the server (`server/handlers.go`)
+convert a JSON-described problem into a `ge.Problem`. That conversion is identical
+and must stay in sync. The right place is the package they both already share:
+`internal/dto`.
 
-```go
-type RelationshipDTO struct {
-    A       string `json:"a"`
-    B       string `json:"b"`
-    Disabled bool   `json:"disabled,omitempty"`
-}
+`server/api.go` defines HTTP-specific types (`OptionsDTO`, `SolveResponse`,
+`ErrorResponse`). It references dto types but does not define domain types. No
+new domain types go in `server/api.go`.
 
-type BlockGroupDTO struct {
-    ID       string `json:"id"`
-    Label    string `json:"label"`
-    Disabled bool   `json:"disabled,omitempty"`
-}
-```
-
-`SolveRequest` gains new optional fields:
-
-```go
-type SolveRequest struct {
-    Participants []dto.ParticipantDTO `json:"participants"`
-    Blocks       []dto.BlockDTO       `json:"blocks"`
-    // New fields:
-    Relationships []RelationshipDTO   `json:"relationships,omitempty"`
-    BlockGroups   []BlockGroupDTO     `json:"block_groups,omitempty"`
-    Options       *OptionsDTO         `json:"options,omitempty"`
-}
-```
-
-`dto.BlockDTO` gains a `Disabled` and optional `Group` field:
-
-```go
-type BlockDTO struct {
-    From     string `json:"from"`
-    To       string `json:"to"`
-    Disabled bool   `json:"disabled,omitempty"`
-    Group    string `json:"group,omitempty"`
-}
-```
-
-`dto.ParticipantDTO` gains a `Disabled` field:
+### New types in `internal/dto/types.go`
 
 ```go
 type ParticipantDTO struct {
@@ -100,100 +51,243 @@ type ParticipantDTO struct {
     Name     string `json:"name"`
     Disabled bool   `json:"disabled,omitempty"`
 }
+
+type BlockDTO struct {
+    From     string `json:"from"`
+    To       string `json:"to"`
+    Disabled bool   `json:"disabled,omitempty"`
+    Group    string `json:"group,omitempty"`
+}
+
+type RelationshipDTO struct {
+    A        string `json:"a"`
+    B        string `json:"b"`
+    Disabled bool   `json:"disabled,omitempty"`
+}
+
+// BlockGroupDTO carries the server-relevant state for a block group.
+// The `collapsed` field (frontend-only UI state) is intentionally absent.
+type BlockGroupDTO struct {
+    ID       string `json:"id"`
+    Label    string `json:"label"`
+    Disabled bool   `json:"disabled,omitempty"`
+}
 ```
 
-### `server/handlers.go` — `dtoToProblem` update
+### New function in `internal/dto/mapping.go`
 
-The handler function that converts a `SolveRequest` to `lib.Problem` is
-updated to:
+```go
+// BuildProblem converts the rich domain model into the flat ge.Problem the
+// solver expects. It filters disabled participants, blocks, and relationships,
+// expands relationships into directed block pairs, and filters blocks belonging
+// to disabled groups or involving disabled participants.
+func BuildProblem(
+    participants []ParticipantDTO,
+    blocks []BlockDTO,
+    relationships []RelationshipDTO,
+    blockGroups []BlockGroupDTO,
+) ge.Problem {
+    disabledParticipants := make(map[string]bool)
+    var activeParticipants []ge.Participant
+    for _, p := range participants {
+        if p.Disabled {
+            disabledParticipants[p.ID] = true
+        } else {
+            activeParticipants = append(activeParticipants, ge.Participant{ID: p.ID, Name: p.Name})
+        }
+    }
 
-1. Filter disabled participants from the participant list.
-2. Build the effective block list:
-   - Expand `Relationships` (filtering disabled ones and those involving
-     disabled participants) into two directed blocks each.
-   - Include `Blocks` that are not disabled, not in a disabled group,
-     and don't involve a disabled participant.
-3. Pass the filtered lists to `lib.Solve`.
+    disabledGroups := make(map[string]bool)
+    for _, g := range blockGroups {
+        if g.Disabled {
+            disabledGroups[g.ID] = true
+        }
+    }
 
-This is the same logic currently in `effectiveBlocks()` and
-`activeParticipants()` on the frontend — moved verbatim into Go.
+    var activeBlocks []ge.Block
+    for _, b := range blocks {
+        if b.Disabled || disabledGroups[b.Group] || disabledParticipants[b.From] || disabledParticipants[b.To] {
+            continue
+        }
+        activeBlocks = append(activeBlocks, ge.Block{From: b.From, To: b.To})
+    }
+    for _, r := range relationships {
+        if r.Disabled || disabledParticipants[r.A] || disabledParticipants[r.B] {
+            continue
+        }
+        activeBlocks = append(activeBlocks, ge.Block{From: r.A, To: r.B})
+        activeBlocks = append(activeBlocks, ge.Block{From: r.B, To: r.A})
+    }
 
-### Frontend `stateToRequest(state)`
+    return ge.Problem{Participants: activeParticipants, Blocks: activeBlocks}
+}
+```
 
-Simplified to send the full data model:
+The existing `ParticipantsToLib`, `BlocksToLib`, and their singular forms remain
+unchanged — they are still used by `SolutionsFromLib` and tests.
+
+---
+
+## Changes by file
+
+### `internal/dto/types.go`
+
+- Add `Disabled bool` to `ParticipantDTO` and `BlockDTO`
+- Add `Group string` to `BlockDTO`
+- Add `RelationshipDTO` and `BlockGroupDTO` (new types)
+
+### `internal/dto/mapping.go`
+
+- Add `BuildProblem()` (see above)
+
+### `internal/dto/mapping_test.go`
+
+- Tests for `BuildProblem`:
+  - Disabled participant excluded; their blocks and relationships excluded
+  - Disabled block excluded
+  - Disabled group → all blocks in that group excluded
+  - Disabled relationship excluded
+  - Enabled relationship expands to two directed blocks
+  - Old-style call (no relationships, no groups, no disabled) still works
+
+### `cmd/giftexchange/main.go`
+
+`inputDoc` gains two new optional fields:
+
+```go
+type inputDoc struct {
+    Participants  []dto.ParticipantDTO  `json:"participants"`
+    Blocks        []dto.BlockDTO        `json:"blocks,omitempty"`
+    Relationships []dto.RelationshipDTO `json:"relationships,omitempty"`
+    BlockGroups   []dto.BlockGroupDTO   `json:"block_groups,omitempty"`
+    Options       inputOptions          `json:"options"`
+    // Round-trip fields (written on output, ignored when re-used as input).
+    Solutions []dto.SolutionDTO `json:"solutions,omitempty"`
+    Feasible  *bool             `json:"feasible,omitempty"`
+}
+```
+
+`inputDoc.problem()` becomes:
+
+```go
+func (d *inputDoc) problem() ge.Problem {
+    return dto.BuildProblem(d.Participants, d.Blocks, d.Relationships, d.BlockGroups)
+}
+```
+
+The `validate` output line changes from `Blocks: N` to `Blocks: N  Relationships: M`
+(or similar) to reflect the enriched input. This is a minor cosmetic update.
+
+### `server/api.go`
+
+`SolveRequest` gains the new fields:
+
+```go
+type SolveRequest struct {
+    Participants  []dto.ParticipantDTO  `json:"participants"`
+    Blocks        []dto.BlockDTO        `json:"blocks,omitempty"`
+    Relationships []dto.RelationshipDTO `json:"relationships,omitempty"`
+    BlockGroups   []dto.BlockGroupDTO   `json:"block_groups,omitempty"`
+    Options       OptionsDTO            `json:"options,omitempty"`
+}
+```
+
+No types are defined in `server/api.go` that duplicate what is in `internal/dto`.
+
+### `server/handlers.go`
+
+`dtoToProblem` calls `BuildProblem`:
+
+```go
+func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
+    seed := req.Options.Seed
+    if seed == 0 {
+        seed = ge.NewSeed()
+    }
+    maxSolutions := req.Options.MaxSolutions
+    if maxSolutions <= 0 {
+        maxSolutions = ge.DefaultMaxSolutions
+    }
+    timeout := time.Duration(req.Options.TimeoutMs) * time.Millisecond
+    if timeout <= 0 {
+        timeout = defaultTimeout
+    }
+    return dto.BuildProblem(req.Participants, req.Blocks, req.Relationships, req.BlockGroups),
+        ge.Options{MaxSolutions: maxSolutions, Seed: seed, Timeout: timeout}, seed
+}
+```
+
+### `server/handlers_test.go`
+
+Add tests:
+- Request with `relationships` produces same result as equivalent two-block request
+- Request with `disabled: true` on a participant excludes them + their blocks
+- Request with `disabled: true` on a block group excludes its blocks
+- Old-style request (no new fields) continues to work identically
+
+### `server/web/app.js`
+
+`stateToRequest` is simplified:
 
 ```js
 export function stateToRequest(state) {
   const opts = { max_solutions: state.options.maxSolutions };
   if (state.options.seed != null) opts.seed = Number(state.options.seed);
   return {
-    participants: state.participants,     // includes disabled: true where set
-    relationships: state.relationships,   // includes disabled: true where set
-    blocks: state.blocks,                 // includes disabled: true, group where set
-    block_groups: state.blockGroups,      // includes disabled: true where set
+    participants: state.participants,
+    relationships: state.relationships,
+    blocks: state.blocks,
+    block_groups: state.blockGroups,
     options: opts,
   };
 }
 ```
 
-`effectiveBlocks()` and `activeParticipants()` are removed from the frontend
-(they become dead code once `stateToRequest` no longer calls them).
+`effectiveBlocks()` and `activeParticipants()` are removed (dead code after this
+change). `restartGraph()` calls a trimmed local helper instead — see below.
 
-### Frontend `buildValidEdges()` — local use only
+### `server/web/app.js` — graph still needs local filtering
 
-`buildValidEdges` is still used for the D3 graph (to show grey valid edges) and
-still runs in the browser. It must compute the effective block set locally for
-graph purposes. Post-Phase 16, it takes the same inputs as before and performs
-its own filtering inline (or calls a trimmed local helper that is no longer
-exported).
+`buildValidEdges` is called from `restartGraph` to drive the D3 layout. It must
+compute the active participant set and effective block set locally for graph
+rendering. After this phase it is no longer exported or named `effectiveBlocks`;
+it becomes a private implementation detail of `restartGraph`:
 
----
-
-## Design Questions (resolve before implementation)
-
-1. **Breaking API change?** Adding new optional fields to `SolveRequest` is
-   backwards-compatible (old clients that send only `participants` and `blocks`
-   continue to work). No version bump needed.
-
-2. **Block groups as first-class API concept?** The `block_groups` field is
-   purely metadata for the frontend (ordering, labels). The server only needs
-   `group` on each block to know which group it belongs to, so it can filter
-   disabled groups. The full `BlockGroupDTO` in the request gives the server
-   access to `disabled` state. ✓
-
-3. **Relationship deduplication on server?** The server should deduplicate
-   symmetric pairs before building the block list (same as the frontend's
-   `some(r => [r.a, r.b].sort().join("|") === key)` check). Or it can skip
-   deduplication — duplicate blocks are safe for lib.Solve (a blocked edge
-   stays blocked).
-
-4. **Response shape change?** The `SolveResponse` does not change. The server
-   still returns ranked `SolutionDTO[]`.
+The logic that was in `effectiveBlocks` + `activeParticipants` stays in the
+frontend, but only for the graph — it is not used for the API call anymore.
+The comment above `buildValidEdges` is updated to make this clear.
 
 ---
 
-## Files to Change
+## Design Questions (resolved)
 
-| File                            | Changes                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------- |
-| `server/api.go`                 | Add `RelationshipDTO`, `BlockGroupDTO`; extend `SolveRequest`, `BlockDTO`, `ParticipantDTO` |
-| `server/handlers.go`            | Update `dtoToProblem` to expand relationships and filter disabled items   |
-| `server/handlers_test.go`       | Add tests for relationship expansion, disabled filtering, group filtering |
-| `internal/dto/types.go`         | Add `Disabled`, `Group` to `BlockDTO`; `Disabled` to `ParticipantDTO`    |
-| `internal/dto/mapping.go`       | Update `BlocksToLib` to skip disabled blocks                              |
-| `internal/dto/mapping_test.go`  | Roundtrip tests for new fields                                            |
-| `server/web/app.js`             | Simplify `stateToRequest`; remove `effectiveBlocks`/`activeParticipants` |
+1. **Breaking API change?** No. New fields are optional; old clients that omit
+   `relationships`, `block_groups`, and `disabled` fields continue to work.
+
+2. **Where do new types live?** `internal/dto` — shared between CLI and server.
+   No domain types are defined in `server/api.go`.
+
+3. **`BlockGroupDTO.collapsed`?** Absent. `collapsed` is frontend-only UI state;
+   the server and CLI have no use for it.
+
+4. **Relationship deduplication on server?** Skipped. Duplicate blocks are safe
+   for `lib.Solve` (a blocked edge stays blocked). The frontend already prevents
+   duplicate relationships at entry time.
+
+5. **Response shape change?** No. `SolveResponse` is unchanged.
 
 ---
 
-## Acceptance Criteria (high level)
+## Acceptance Criteria
 
-- Sending `relationships` in the request: the server produces the same solve
-  result as the current frontend-expansion path.
-- Sending `disabled: true` on a participant: that participant is excluded;
-  all their blocks and relationships are also excluded.
-- Sending `disabled: true` on a block group: all blocks with that group ID
+- `dto.BuildProblem` with relationships → same solve result as equivalent
+  two-block input.
+- `dto.BuildProblem` with a disabled participant → that participant and all their
+  blocks/relationships are excluded.
+- `dto.BuildProblem` with a disabled block group → all blocks with that group ID
   are excluded.
-- Old requests (no `relationships`, no `disabled` fields) continue to work
-  identically.
-- All existing handler tests pass.
+- CLI `solve` command accepts `relationships` and `block_groups` in its JSON input
+  and processes them correctly.
+- Old CLI inputs (no `relationships`, no disabled fields) continue to work.
+- All existing handler tests and CLI tests pass.
+- `go vet` and `staticcheck` clean.

@@ -39,8 +39,8 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 15 (E1–E8). Enable/disable toggle on participants, blocks, block groups, and relationships; disabled items filtered from solve; disabled participant nodes shown with dashed border in graph; associated blocks/relationships of disabled participants also shown as struck-out; hash v4 encodes disabled state. Also: sidebar width now fluid (clamp), block row alignment fixed, toggle button spacing tuned.
-**Next action**: See `plans/phase9-required.md` for Required Assignments, or `plans/phase16-backend-enrichment.md` for backend enrichment when ready.
+**Last session**: Completed Phase 16 (Backend Enrichment). Added `RelationshipDTO`, `BlockGroupDTO` to `internal/dto`; `Disabled`/`Group` fields on `BlockDTO`/`ParticipantDTO`; `dto.BuildProblem()` shared by CLI and server for relationship expansion, disabled filtering, and block group flattening. CLI `inputDoc` now accepts `relationships` and `block_groups`. Server `SolveRequest` updated. Frontend `stateToRequest` simplified to send raw state; `effectiveBlocks`/`activeParticipants` removed from API path; graph still filters locally for D3 layout.
+**Next action**: See `plans/phase9-required.md` for Required Assignments.
 
 ---
 
@@ -143,3 +143,13 @@ These are settled. Do not re-open them without flagging to the user.
    `test:`, `chore:`, etc.) with a body that explains what changed and why. Each
    logical unit of work (a new file, a passing test suite, a bug fix) warrants its
    own commit.
+6. **Challenge ideas from both sides.** Neither of us is always right. When the user
+   proposes something, consider it carefully: does it solve the actual problem? Is
+   there a simpler path? Is something being missed? Say so clearly. The same applies
+   in reverse — push back on Claude's suggestions too. We're a team and together
+   greater than the sum of our parts.
+7. **No abstraction for aesthetics.** Don't extract a function just to make code
+   "look like prose." If a function is called in only one or two places and the body
+   is not being duplicated elsewhere, leave it inline. Only abstract when the
+   alternative is copy-pasting dense logic across multiple callsites. We optimize for
+   true comprehension in fine detail, not surface readability.

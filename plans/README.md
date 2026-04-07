@@ -21,7 +21,7 @@
 - [x] **Phase 13 — Frontend Cleanup**: Two bug fixes, four JS structural improvements, one HTML validity fix, four CSS cleanup items. No behavior changes except B1. Frontend-only.
 - [x] **Phase 14 — Solution Sharing & Graph UX**: Deselect solution (tab toggle), toggle background edges (graph overlay), hash v3 with solution cycles + presentation mode, "Copy Link" enrichment. Frontend-only.
 - [x] **Phase 15 — Enable/Disable** (`plans/phase15-enable-disable.md`): Toggle participants, blocks, block groups, and relationships inactive without deleting them. Disabled items are filtered before solving. Hash v4 encodes disabled state. Frontend-only.
-- [ ] **Phase 16 — Backend Enrichment** (`plans/phase16-backend-enrichment.md`): Move relationship expansion, block-group flattening, and enabled/disabled filtering from the frontend into the server. Frontend sends its data model directly; server handles all expansion and filtering before calling lib.Solve. Full-stack.
+- [x] **Phase 16 — Backend Enrichment** (`plans/phase16-backend-enrichment.md`): Move relationship expansion, block-group flattening, and enabled/disabled filtering into `internal/dto.BuildProblem`, shared by CLI and server. Frontend sends its data model directly. Full-stack.
 
 ---
 

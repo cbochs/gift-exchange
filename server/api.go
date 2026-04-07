@@ -13,9 +13,11 @@ type OptionsDTO struct {
 
 // SolveRequest is the body of POST /api/v1/solve.
 type SolveRequest struct {
-	Participants []dto.ParticipantDTO `json:"participants"`
-	Blocks       []dto.BlockDTO       `json:"blocks,omitempty"`
-	Options      OptionsDTO           `json:"options,omitempty"`
+	Participants  []dto.ParticipantDTO  `json:"participants"`
+	Blocks        []dto.BlockDTO        `json:"blocks,omitempty"`
+	Relationships []dto.RelationshipDTO `json:"relationships,omitempty"`
+	BlockGroups   []dto.BlockGroupDTO   `json:"block_groups,omitempty"`
+	Options       OptionsDTO            `json:"options,omitempty"`
 }
 
 // SolveResponse is the body of a successful POST /api/v1/solve response.

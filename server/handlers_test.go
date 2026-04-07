@@ -201,6 +201,119 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
+func TestSolveHandler_Relationship(t *testing.T) {
+	// A relationship A↔B should produce the same solve result as two directed blocks A→B and B→A.
+	withRelationship := `{
+		"participants": [
+			{"id":"a","name":"Alice"},{"id":"b","name":"Bob"},
+			{"id":"c","name":"Carol"},{"id":"d","name":"Dave"}
+		],
+		"relationships": [{"a":"a","b":"b"}],
+		"options": {"seed": 7}
+	}`
+	withBlocks := `{
+		"participants": [
+			{"id":"a","name":"Alice"},{"id":"b","name":"Bob"},
+			{"id":"c","name":"Carol"},{"id":"d","name":"Dave"}
+		],
+		"blocks": [{"from":"a","to":"b"},{"from":"b","to":"a"}],
+		"options": {"seed": 7}
+	}`
+
+	_, raw1 := testSolve(t, withRelationship)
+	_, raw2 := testSolve(t, withBlocks)
+
+	var r1, r2 SolveResponse
+	if err := json.Unmarshal(raw1, &r1); err != nil {
+		t.Fatalf("unmarshal r1: %v", err)
+	}
+	if err := json.Unmarshal(raw2, &r2); err != nil {
+		t.Fatalf("unmarshal r2: %v", err)
+	}
+	if !r1.Feasible || !r2.Feasible {
+		t.Fatal("expected both to be feasible")
+	}
+	if len(r1.Solutions) == 0 || len(r2.Solutions) == 0 {
+		t.Fatal("expected solutions in both responses")
+	}
+	// Same seed + same effective blocks → identical first solution.
+	a1, a2 := r1.Solutions[0].Assignments, r2.Solutions[0].Assignments
+	if len(a1) != len(a2) {
+		t.Fatalf("assignment count mismatch: %d vs %d", len(a1), len(a2))
+	}
+	for i := range a1 {
+		if a1[i] != a2[i] {
+			t.Fatalf("assignment[%d] mismatch: %+v vs %+v", i, a1[i], a2[i])
+		}
+	}
+}
+
+func TestSolveHandler_DisabledParticipant(t *testing.T) {
+	// Dave is disabled — should be excluded; result has only 3 participants.
+	body := `{
+		"participants": [
+			{"id":"a","name":"Alice"},{"id":"b","name":"Bob"},
+			{"id":"c","name":"Carol"},{"id":"d","name":"Dave","disabled":true}
+		],
+		"options": {"seed": 1}
+	}`
+	resp, raw := testSolve(t, body)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, raw)
+	}
+	var result SolveResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(result.Solutions) == 0 {
+		t.Fatal("expected at least one solution")
+	}
+	// Each assignment must involve only the 3 active participants.
+	active := map[string]bool{"a": true, "b": true, "c": true}
+	for _, a := range result.Solutions[0].Assignments {
+		if !active[a.GifterID] {
+			t.Errorf("disabled participant %q appeared as gifter", a.GifterID)
+		}
+		if !active[a.RecipientID] {
+			t.Errorf("disabled participant %q appeared as recipient", a.RecipientID)
+		}
+	}
+}
+
+func TestSolveHandler_DisabledBlockGroup(t *testing.T) {
+	// Group "hist" is disabled — its block a→b is excluded. Without the block,
+	// solving 4 participants is straightforward.
+	body := `{
+		"participants": [
+			{"id":"a","name":"Alice"},{"id":"b","name":"Bob"},
+			{"id":"c","name":"Carol"},{"id":"d","name":"Dave"}
+		],
+		"blocks": [{"from":"a","to":"b","group":"hist"}],
+		"block_groups": [{"id":"hist","label":"History","disabled":true}],
+		"options": {"seed": 1}
+	}`
+	resp, raw := testSolve(t, body)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, raw)
+	}
+	var result SolveResponse
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	// The disabled block means a→b is allowed; verify a→b appears in some solution.
+	found := false
+	for _, sol := range result.Solutions {
+		for _, a := range sol.Assignments {
+			if a.GifterID == "a" && a.RecipientID == "b" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected a→b to be allowed when the group is disabled, but it never appeared in any solution")
+	}
+}
+
 // TestSolveHandler_PropertyValid verifies that for random valid problems,
 // every returned solution is a valid permutation: each participant appears
 // exactly once as gifter and exactly once as recipient, with no self-assignments.

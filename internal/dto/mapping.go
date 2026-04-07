@@ -61,6 +61,52 @@ func SolutionFromLib(s ge.Solution) SolutionDTO {
 	}
 }
 
+// BuildProblem converts the rich domain model into the flat ge.Problem the
+// solver expects. Disabled participants are excluded, along with any blocks or
+// relationships that involve them. Disabled block groups cause all blocks
+// belonging to that group to be excluded. Enabled relationships are expanded
+// into two directed blocks (A→B and B→A).
+func BuildProblem(
+	participants []ParticipantDTO,
+	blocks []BlockDTO,
+	relationships []RelationshipDTO,
+	blockGroups []BlockGroupDTO,
+) ge.Problem {
+	disabledParticipants := make(map[string]bool)
+	var activeParticipants []ge.Participant
+	for _, p := range participants {
+		if p.Disabled {
+			disabledParticipants[p.ID] = true
+		} else {
+			activeParticipants = append(activeParticipants, ge.Participant{ID: p.ID, Name: p.Name})
+		}
+	}
+
+	disabledGroups := make(map[string]bool)
+	for _, g := range blockGroups {
+		if g.Disabled {
+			disabledGroups[g.ID] = true
+		}
+	}
+
+	var activeBlocks []ge.Block
+	for _, b := range blocks {
+		if b.Disabled || disabledGroups[b.Group] || disabledParticipants[b.From] || disabledParticipants[b.To] {
+			continue
+		}
+		activeBlocks = append(activeBlocks, ge.Block{From: b.From, To: b.To})
+	}
+	for _, r := range relationships {
+		if r.Disabled || disabledParticipants[r.A] || disabledParticipants[r.B] {
+			continue
+		}
+		activeBlocks = append(activeBlocks, ge.Block{From: r.A, To: r.B})
+		activeBlocks = append(activeBlocks, ge.Block{From: r.B, To: r.A})
+	}
+
+	return ge.Problem{Participants: activeParticipants, Blocks: activeBlocks}
+}
+
 // SolutionsFromLib converts a slice of lib Solutions to SolutionDTOs.
 func SolutionsFromLib(ss []ge.Solution) []SolutionDTO {
 	out := make([]SolutionDTO, len(ss))

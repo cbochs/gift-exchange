@@ -68,46 +68,16 @@ export function buildValidEdges(participants, blocks) {
   return edges;
 }
 
-export function activeParticipants(state) {
-  return state.participants.filter(p => !p.disabled);
-}
-
-// Returns the union of explicit directed blocks and the two-direction expansion
-// of symmetric relationships, with disabled items filtered out.
-// This is what gets sent to the API.
-export function effectiveBlocks(state) {
-  const disabledParticipantIds = new Set(
-    state.participants.filter(p => p.disabled).map(p => p.id)
-  );
-  const disabledGroupIds = new Set(
-    state.blockGroups.filter(g => g.disabled).map(g => g.id)
-  );
-  return [
-    ...state.blocks
-      .filter(b =>
-        !b.disabled &&
-        !disabledGroupIds.has(b.group) &&
-        !disabledParticipantIds.has(b.from) &&
-        !disabledParticipantIds.has(b.to)
-      )
-      .map(({ from, to }) => ({ from, to })),
-    ...state.relationships
-      .filter(r =>
-        !r.disabled &&
-        !disabledParticipantIds.has(r.a) &&
-        !disabledParticipantIds.has(r.b)
-      )
-      .flatMap(r => [
-        { from: r.a, to: r.b },
-        { from: r.b, to: r.a },
-      ]),
-  ];
-}
-
 export function stateToRequest(state) {
   const opts = { max_solutions: state.options.maxSolutions };
   if (state.options.seed != null) opts.seed = Number(state.options.seed);
-  return { participants: activeParticipants(state), blocks: effectiveBlocks(state), options: opts };
+  return {
+    participants: state.participants,
+    relationships: state.relationships,
+    blocks: state.blocks,
+    block_groups: state.blockGroups,
+    options: opts,
+  };
 }
 
 // Populates state from an imported JSON document.
@@ -531,7 +501,33 @@ function restartGraph() {
     svgSel.call(zoomBehavior.transform, d3.zoomIdentity);
     prevNodeIdSet = nodeIdSet;
   }
-  const validEdges = buildValidEdges(activeParticipants(state), effectiveBlocks(state));
+  // Compute the active participant set and effective block set locally for the
+  // D3 graph. This mirrors the server-side BuildProblem logic in internal/dto.
+  const disabledParticipantIds = new Set(
+    state.participants.filter(p => p.disabled).map(p => p.id)
+  );
+  const disabledGroupIds = new Set(
+    state.blockGroups.filter(g => g.disabled).map(g => g.id)
+  );
+  const graphParticipants = state.participants.filter(p => !p.disabled);
+  const graphBlocks = [
+    ...state.blocks
+      .filter(b =>
+        !b.disabled &&
+        !disabledGroupIds.has(b.group) &&
+        !disabledParticipantIds.has(b.from) &&
+        !disabledParticipantIds.has(b.to)
+      )
+      .map(({ from, to }) => ({ from, to })),
+    ...state.relationships
+      .filter(r =>
+        !r.disabled &&
+        !disabledParticipantIds.has(r.a) &&
+        !disabledParticipantIds.has(r.b)
+      )
+      .flatMap(r => [{ from: r.a, to: r.b }, { from: r.b, to: r.a }]),
+  ];
+  const validEdges = buildValidEdges(graphParticipants, graphBlocks);
   const solutionEdges = buildSolutionEdges(state.solutions[state.selectedSolution]);
   const nodeColors = buildNodeColors(state.solutions[state.selectedSolution]);
 
@@ -611,7 +607,7 @@ function recolorGraph() {
 function renderParticipantList() {
   const ul = document.getElementById("participant-list");
   ul.innerHTML = "";
-  const activeN = activeParticipants(state).length;
+  const activeN = state.participants.filter(p => !p.disabled).length;
   const atCap = activeN >= MAX_PARTICIPANTS;
   const n = state.participants.length;
   document.getElementById("participant-count").textContent = n > 0 ? `${activeN} / ${MAX_PARTICIPANTS}` : "";

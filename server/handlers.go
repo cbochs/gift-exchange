@@ -84,10 +84,7 @@ func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
 		timeout = defaultTimeout
 	}
 
-	return ge.Problem{
-		Participants: dto.ParticipantsToLib(req.Participants),
-		Blocks:       dto.BlocksToLib(req.Blocks),
-	}, ge.Options{
+	return dto.BuildProblem(req.Participants, req.Blocks, req.Relationships, req.BlockGroups), ge.Options{
 		MaxSolutions: maxSolutions,
 		Seed:         seed,
 		Timeout:      timeout,
