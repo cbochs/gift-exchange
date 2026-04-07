@@ -75,7 +75,7 @@ export function stateToRequest(state) {
     participants: state.participants,
     relationships: state.relationships,
     blocks: state.blocks,
-    block_groups: state.blockGroups,
+    block_groups: state.blockGroups.map(({ id, label, disabled }) => disabled ? { id, label, disabled } : { id, label }),
     options: opts,
   };
 }
