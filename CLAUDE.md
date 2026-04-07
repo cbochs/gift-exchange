@@ -39,7 +39,7 @@ Do not start any implementation work before reading the relevant phase plan.
 ## Current State (update this each session)
 
 **Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 13 (B1–B2, S1–S4, H1, C1–C4). Bug fixes: blockGroups cleared on reset, window._state removed. JS: mutated() helper DRYing 8 call sites, renderOptions folded into renderSidebar, confirm renamed to commitRename, buildValidEdges simplified. HTML: ul#block-list → div. CSS: --accent-ring/--banner-* tokens, .icon-btn base class, redundant .btn-primary:disabled removed.
+**Last session**: Completed Phase 14 (F1–F5). Deselect solution by clicking active tab (selectedSolution supports null); toggle background edges via graph overlay checkbox; hash v3 encodes solution cycles + pres flag; decodeV3 reconstructs SolutionDTO; presentation mode collapses sidebar sections and shows context-aware banner on load.
 **Next action**: See `plans/phase9-required.md` for the future Required Assignments feature when ready to resume.
 
 ---

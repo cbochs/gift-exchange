@@ -2,11 +2,11 @@
 
 ## Status
 
-- [ ] **F1** — Deselect solution by clicking the active tab
-- [ ] **F2** — Toggle valid/background edges via graph overlay button
-- [ ] **F3** — Hash v3 encoder: solution cycles + presentation flag
-- [ ] **F4** — Hash v3 decoder: reconstruct solution, detect presentation mode
-- [ ] **F5** — Presentation mode on load: collapse sidebar, update banner
+- [x] **F1** — Deselect solution by clicking the active tab
+- [x] **F2** — Toggle valid/background edges via graph overlay button
+- [x] **F3** — Hash v3 encoder: solution cycles + presentation flag
+- [x] **F4** — Hash v3 decoder: reconstruct solution, detect presentation mode
+- [x] **F5** — Presentation mode on load: collapse sidebar, update banner
 
 All changes are frontend-only (`server/web/`). No Go changes, no API changes,
 no behavior changes except those explicitly described below.
