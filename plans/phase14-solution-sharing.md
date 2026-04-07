@@ -43,16 +43,16 @@ After this change it may also be `null`, meaning no solution is selected.
 
 Audit of all call sites that read `state.selectedSolution`:
 
-| Site | Behaviour with `null` | Action needed |
-|---|---|---|
-| `state.solutions[state.selectedSolution]` | `undefined` (same as empty array) | None — all consumers already guard |
-| `buildSolutionEdges(undefined)` | Returns `[]` — already guarded | None |
-| `buildNodeColors(undefined)` | Returns `{}` — already guarded | None |
-| `onAddAsHistoryBlocks` | `if (!sol) return;` already present | None |
-| `onDownload` | `_selected_solution: null` is valid JSON | None |
-| `renderSolutionsPanel` | Crashes: `sol.score` on undefined | Fix — see below |
-| `recolorGraph` | Calls `buildSolutionEdges(undefined)` → `[]` | None |
-| `encodeStateToHash` (after F3) | `state.solutions[null]` → undefined → no `c` field | None |
+| Site                                      | Behaviour with `null`                              | Action needed                      |
+| ----------------------------------------- | -------------------------------------------------- | ---------------------------------- |
+| `state.solutions[state.selectedSolution]` | `undefined` (same as empty array)                  | None — all consumers already guard |
+| `buildSolutionEdges(undefined)`           | Returns `[]` — already guarded                     | None                               |
+| `buildNodeColors(undefined)`              | Returns `{}` — already guarded                     | None                               |
+| `onAddAsHistoryBlocks`                    | `if (!sol) return;` already present                | None                               |
+| `onDownload`                              | `_selected_solution: null` is valid JSON           | None                               |
+| `renderSolutionsPanel`                    | Crashes: `sol.score` on undefined                  | Fix — see below                    |
+| `recolorGraph`                            | Calls `buildSolutionEdges(undefined)` → `[]`       | None                               |
+| `encodeStateToHash` (after F3)            | `state.solutions[null]` → undefined → no `c` field | None                               |
 
 ### `renderSolutionsPanel` fix
 
@@ -62,12 +62,12 @@ loop. With `selectedSolution = null`, `sol` is `undefined` and this throws.
 Restructure the function into three phases:
 
 1. **No solutions** (`!state.solutions.length`): clear tabs, clear detail,
-   hide both action buttons, return early. *(existing behaviour)*
+   hide both action buttons, return early. _(existing behaviour)_
 2. **Solutions exist, none selected** (`selectedSolution === null`): render
    tabs (none marked `.active`), clear detail, hide both action buttons,
-   return early. *(new)*
+   return early. _(new)_
 3. **Solution selected**: render tabs, render detail, show action buttons.
-   *(existing behaviour, now the last branch)*
+   _(existing behaviour, now the last branch)_
 
 ```
 // phase 1
@@ -146,7 +146,7 @@ label text, and the browser renders the toggle natively.
 
 ```html
 <label class="graph-overlay-btn">
-  <input type="checkbox" id="chk-show-edges" checked> Show edges
+  <input type="checkbox" id="chk-show-edges" checked /> Show edges
 </label>
 ```
 
@@ -171,8 +171,12 @@ The checkbox starts checked (edges visible by default).
   opacity: 0.7;
   user-select: none;
 }
-.graph-overlay-btn:hover { opacity: 1; }
-.graph-overlay-btn input[type="checkbox"] { cursor: pointer; }
+.graph-overlay-btn:hover {
+  opacity: 1;
+}
+.graph-overlay-btn input[type="checkbox"] {
+  cursor: pointer;
+}
 ```
 
 ### Wire event
@@ -180,7 +184,7 @@ The checkbox starts checked (edges visible by default).
 In `wireEvents()`:
 
 ```js
-document.getElementById("chk-show-edges").addEventListener("change", e => {
+document.getElementById("chk-show-edges").addEventListener("change", (e) => {
   state.showValidEdges = e.target.checked;
   validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 });
@@ -207,10 +211,10 @@ validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 
 Extends v2 with two new optional top-level fields:
 
-| Field | Type | Included when | Meaning |
-|---|---|---|---|
-| `pres` | `true` | Always in v3 | Recipient loads in presentation mode |
-| `c` | `number[][]` | Solution selected | Cycles as participant-index arrays |
+| Field  | Type         | Included when     | Meaning                              |
+| ------ | ------------ | ----------------- | ------------------------------------ |
+| `pres` | `true`       | Always in v3      | Recipient loads in presentation mode |
+| `c`    | `number[][]` | Solution selected | Cycles as participant-index arrays   |
 
 The `c` field encodes `sol.cycles` using the same participant-index mapping
 already computed in `encodeStateToHash` (`idxOf`). A 20-person Hamiltonian
@@ -224,32 +228,41 @@ them from the cycles (see F4).
 ```js
 export function encodeStateToHash(state) {
   const idxOf = Object.fromEntries(state.participants.map((p, i) => [p.id, i]));
-  const groupIdxOf = Object.fromEntries(state.blockGroups.map((g, i) => [g.id, i]));
+  const groupIdxOf = Object.fromEntries(
+    state.blockGroups.map((g, i) => [g.id, i]),
+  );
 
-  const ungrouped = state.blocks.filter(b => !b.group);
-  const grouped   = state.blocks.filter(b =>  b.group);
+  const ungrouped = state.blocks.filter((b) => !b.group);
+  const grouped = state.blocks.filter((b) => b.group);
 
   const compact = {
     v: 3,
-    p: state.participants.map(p => [p.id, p.name]),
-    r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
-    b: ungrouped.map(b => [idxOf[b.from], idxOf[b.to]]),
-    ...(grouped.length ? {
-      g: state.blockGroups.map(g => g.label),
-      bg: grouped.map(b => [idxOf[b.from], idxOf[b.to], groupIdxOf[b.group]]),
-    } : {}),
+    p: state.participants.map((p) => [p.id, p.name]),
+    r: state.relationships.map((r) => [idxOf[r.a], idxOf[r.b]]),
+    b: ungrouped.map((b) => [idxOf[b.from], idxOf[b.to]]),
+    ...(grouped.length
+      ? {
+          g: state.blockGroups.map((g) => g.label),
+          bg: grouped.map((b) => [
+            idxOf[b.from],
+            idxOf[b.to],
+            groupIdxOf[b.group],
+          ]),
+        }
+      : {}),
     pres: true,
   };
 
   if (state.options.maxSolutions !== 5 || state.options.seed != null) {
     compact.o = {};
-    if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
+    if (state.options.maxSolutions !== 5)
+      compact.o.m = state.options.maxSolutions;
     if (state.options.seed != null) compact.o.s = state.options.seed;
   }
 
   const sol = state.solutions[state.selectedSolution];
   if (sol) {
-    compact.c = sol.cycles.map(cycle => cycle.map(id => idxOf[id]));
+    compact.c = sol.cycles.map((cycle) => cycle.map((id) => idxOf[id]));
   }
 
   return "#v3:" + hashEncode(compact);
@@ -290,6 +303,7 @@ own. Neither changes externally visible behaviour.
 `decodeV3` then reads the two new fields:
 
 **Solution reconstruction from `compact.c`:**
+
 - Map each cycle's index array back to participant IDs using `base.participants`
 - Derive `assignments` from consecutive cycle pairs (the last element wraps
   to the first)
@@ -334,8 +348,9 @@ need to know about presentation mode.
 
 ```js
 if (hashState?._presentation) {
-  document.querySelectorAll("details.sidebar-section")
-    .forEach(el => el.removeAttribute("open"));
+  document
+    .querySelectorAll("details.sidebar-section")
+    .forEach((el) => el.removeAttribute("open"));
 }
 ```
 
@@ -353,7 +368,10 @@ in `index.html`:
 
 ```html
 <div id="hash-banner" class="hash-banner" hidden>
-  <span id="hash-banner-msg">Loaded from a shared link — click <strong>Generate</strong> to solve, or edit freely.</span>
+  <span id="hash-banner-msg"
+    >Loaded from a shared link — click <strong>Generate</strong> to solve, or
+    edit freely.</span
+  >
   <button class="hash-banner-dismiss" aria-label="Dismiss">×</button>
 </div>
 ```
@@ -364,15 +382,21 @@ Update `showHashBanner` to accept two booleans:
 function showHashBanner(isPresentation, hasSolution) {
   const el = document.getElementById("hash-banner");
   document.getElementById("hash-banner-msg").innerHTML =
-    (isPresentation && hasSolution)
+    isPresentation && hasSolution
       ? "Viewing a shared solution — click <strong>Generate</strong> to re-solve, or edit freely."
       : "Loaded from a shared link — click <strong>Generate</strong> to solve, or edit freely.";
   el.hidden = false;
-  const dismissTimer = setTimeout(() => { el.hidden = true; }, 8000);
-  el.querySelector(".hash-banner-dismiss").addEventListener("click", () => {
-    clearTimeout(dismissTimer);
+  const dismissTimer = setTimeout(() => {
     el.hidden = true;
-  }, { once: true });
+  }, 8000);
+  el.querySelector(".hash-banner-dismiss").addEventListener(
+    "click",
+    () => {
+      clearTimeout(dismissTimer);
+      el.hidden = true;
+    },
+    { once: true },
+  );
 }
 ```
 
@@ -394,8 +418,9 @@ restartGraph();
 updateEmptyState();
 
 if (hashState?._presentation) {
-  document.querySelectorAll("details.sidebar-section")
-    .forEach(el => el.removeAttribute("open"));
+  document
+    .querySelectorAll("details.sidebar-section")
+    .forEach((el) => el.removeAttribute("open"));
 }
 ```
 
@@ -403,17 +428,18 @@ if (hashState?._presentation) {
 
 ## Files to Change
 
-| File | Changes |
-|---|---|
-| `server/web/app.js` | F1: tab toggle + null selectedSolution + renderSolutionsPanel fix + mutated; F2: state + wire; F3: encodeStateToHash; F4: decodeStateFromHash + decodeV3 + parseV2Fields; F5: DOMContentLoaded + showHashBanner |
-| `server/web/index.html` | F2: overlay button; F5: banner message span |
-| `server/web/style.css` | F2: `.graph-overlay-btn` rule |
+| File                    | Changes                                                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/web/app.js`     | F1: tab toggle + null selectedSolution + renderSolutionsPanel fix + mutated; F2: state + wire; F3: encodeStateToHash; F4: decodeStateFromHash + decodeV3 + parseV2Fields; F5: DOMContentLoaded + showHashBanner |
+| `server/web/index.html` | F2: overlay button; F5: banner message span                                                                                                                                                                     |
+| `server/web/style.css`  | F2: `.graph-overlay-btn` rule                                                                                                                                                                                   |
 
 ---
 
 ## Acceptance Criteria
 
 ### F1
+
 - Clicking the active tab sets `state.selectedSolution = null`; no tab has
   `.active`; the detail area is empty; both action buttons are hidden.
 - Clicking any tab when nothing is selected selects it normally.
@@ -424,6 +450,7 @@ if (hashState?._presentation) {
   `[]` / `{}` without throwing.
 
 ### F2
+
 - Unchecking the overlay checkbox hides the grey valid-edge paths.
 - Re-checking shows them.
 - Coloured solution edges are unaffected by the toggle.
@@ -431,6 +458,7 @@ if (hashState?._presentation) {
   reflects the current checkbox state.
 
 ### F3
+
 - `encodeStateToHash` emits a `#v3:` hash with `pres: true` in all cases.
 - When a solution is selected, the hash contains `c` with cycle arrays
   encoded as participant indices; indices are correct (verify manually for a
@@ -439,6 +467,7 @@ if (hashState?._presentation) {
 - Old `#v1:` and `#v2:` links still decode correctly via existing paths.
 
 ### F4
+
 - Loading a `#v3:` hash with a valid `c` field: `state.solutions` contains
   one SolutionDTO with correct `cycles`, `assignments`, and `score`;
   `state.selectedSolution` is `0`; solutions panel renders immediately.
@@ -451,6 +480,7 @@ if (hashState?._presentation) {
   gracefully to no-solution state.
 
 ### F5
+
 - Loading a `#v3:` link: all `<details class="sidebar-section">` start
   without `open`; sidebar appears collapsed.
 - Loading from localStorage (no hash): sidebar opens normally.
