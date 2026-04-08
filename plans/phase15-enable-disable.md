@@ -36,20 +36,21 @@ on E2. E8 is independent and can be done last.
 Disabled state is stored as an optional `disabled: true` field directly on the
 object, following the same pattern as `group.collapsed` and `block.group`.
 Absent or `false` means enabled (the default). This means:
+
 - No migration needed for existing data (absent = enabled)
 - Serializes automatically through JSON import/export and localStorage
 - `buildValidEdges`, `effectiveBlocks`, and `stateToRequest` can read it inline
 
 ### Semantics
 
-| Item disabled         | Effect on solve                                               |
-| --------------------- | ------------------------------------------------------------- |
-| Participant           | Excluded from participants; all their blocks and relationships also excluded |
-| Block                 | Not included in effectiveBlocks                               |
-| Block group           | All blocks in the group excluded (cascades); individual `disabled` flags on blocks within the group are additive but do not matter while the group is disabled |
-| Relationship          | Not expanded into effectiveBlocks                             |
+| Item disabled | Effect on solve                                                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Participant   | Excluded from participants; all their blocks and relationships also excluded                                                                                   |
+| Block         | Not included in effectiveBlocks                                                                                                                                |
+| Block group   | All blocks in the group excluded (cascades); individual `disabled` flags on blocks within the group are additive but do not matter while the group is disabled |
+| Relationship  | Not expanded into effectiveBlocks                                                                                                                              |
 
-A block is *effectively disabled* if `block.disabled || group?.disabled`, where
+A block is _effectively disabled_ if `block.disabled || group?.disabled`, where
 `group` is the block's containing group (if any). This is resolved purely in
 `effectiveBlocks`.
 
@@ -86,6 +87,7 @@ status" rather than "item action." Styling:
 - Disabled: `○` in `var(--muted)` color
 
 The entire `<li>` gets a `.disabled` class when the item is disabled:
+
 - Name text: `opacity: 0.45` and `text-decoration: line-through`
 - Background: unchanged (the muted name is sufficient)
 
@@ -128,7 +130,7 @@ for the solve (not for rendering — the sidebar still renders all participants)
 
 ```js
 export function activeParticipants(state) {
-  return state.participants.filter(p => !p.disabled);
+  return state.participants.filter((p) => !p.disabled);
 }
 ```
 
@@ -139,28 +141,30 @@ Current signature and return type unchanged. Adds disabled filtering:
 ```js
 export function effectiveBlocks(state) {
   const disabledParticipantIds = new Set(
-    state.participants.filter(p => p.disabled).map(p => p.id)
+    state.participants.filter((p) => p.disabled).map((p) => p.id),
   );
   const disabledGroupIds = new Set(
-    state.blockGroups.filter(g => g.disabled).map(g => g.id)
+    state.blockGroups.filter((g) => g.disabled).map((g) => g.id),
   );
 
   return [
     ...state.blocks
-      .filter(b =>
-        !b.disabled &&
-        !disabledGroupIds.has(b.group) &&
-        !disabledParticipantIds.has(b.from) &&
-        !disabledParticipantIds.has(b.to)
+      .filter(
+        (b) =>
+          !b.disabled &&
+          !disabledGroupIds.has(b.group) &&
+          !disabledParticipantIds.has(b.from) &&
+          !disabledParticipantIds.has(b.to),
       )
       .map(({ from, to }) => ({ from, to })),
     ...state.relationships
-      .filter(r =>
-        !r.disabled &&
-        !disabledParticipantIds.has(r.a) &&
-        !disabledParticipantIds.has(r.b)
+      .filter(
+        (r) =>
+          !r.disabled &&
+          !disabledParticipantIds.has(r.a) &&
+          !disabledParticipantIds.has(r.b),
       )
-      .flatMap(r => [
+      .flatMap((r) => [
         { from: r.a, to: r.b },
         { from: r.b, to: r.a },
       ]),
@@ -174,7 +178,11 @@ export function effectiveBlocks(state) {
 export function stateToRequest(state) {
   const opts = { max_solutions: state.options.maxSolutions };
   if (state.options.seed != null) opts.seed = Number(state.options.seed);
-  return { participants: activeParticipants(state), blocks: effectiveBlocks(state), options: opts };
+  return {
+    participants: activeParticipants(state),
+    blocks: effectiveBlocks(state),
+    options: opts,
+  };
 }
 ```
 
@@ -196,16 +204,19 @@ The function signature and body are **unchanged**.
 ### `renderParticipantList()` changes
 
 The participant `<li>` currently has this structure:
+
 ```
 [nameSpan]  [editBtn ✎]  [removeBtn ×]
 ```
 
 After this change:
+
 ```
 [toggleBtn ●/○]  [nameSpan]  [editBtn ✎]  [removeBtn ×]
 ```
 
 The toggle button:
+
 ```js
 const toggleBtn = document.createElement("button");
 toggleBtn.className = "icon-btn toggle-btn";
@@ -222,6 +233,7 @@ Setting `p.disabled = undefined` rather than `false` keeps the serialized JSON
 clean (undefined fields are omitted by JSON.stringify).
 
 The `<li>` gets a class when disabled:
+
 ```js
 if (p.disabled) li.classList.add("disabled");
 ```
@@ -229,13 +241,16 @@ if (p.disabled) li.classList.add("disabled");
 ### Participant cap update
 
 Change the condition that disables the Add input/button from:
+
 ```js
 const atCap = n >= MAX_PARTICIPANTS;
 ```
+
 to:
+
 ```js
 const n = state.participants.length;
-const activeN = state.participants.filter(p => !p.disabled).length;
+const activeN = state.participants.filter((p) => !p.disabled).length;
 const atCap = activeN >= MAX_PARTICIPANTS;
 document.getElementById("participant-count").textContent =
   n > 0 ? `${activeN} / ${MAX_PARTICIPANTS}` : "";
@@ -252,7 +267,9 @@ to the solver.
   font-size: 11px;
   margin-right: 4px;
 }
-.toggle-btn:hover { color: var(--accent); }
+.toggle-btn:hover {
+  color: var(--accent);
+}
 
 li.disabled .item-name,
 li.disabled > span:first-of-type {
@@ -276,18 +293,21 @@ target precisely.
 Currently returns `<li><span>A → B</span><button ×></li>`.
 
 After this change, the `<li>` has the same structure as participant items:
+
 ```
 [toggleBtn ●/○]  [span A → B]  [removeBtn ×]
 ```
 
 ```js
 function makeBlockItem(b, i) {
-  const fromName = state.participants.find(p => p.id === b.from)?.name ?? b.from;
-  const toName   = state.participants.find(p => p.id === b.to)?.name ?? b.to;
+  const fromName =
+    state.participants.find((p) => p.id === b.from)?.name ?? b.from;
+  const toName = state.participants.find((p) => p.id === b.to)?.name ?? b.to;
   const li = document.createElement("li");
 
   // Effective disabled = individually disabled OR group disabled
-  const groupDisabled = b.group && state.blockGroups.find(g => g.id === b.group)?.disabled;
+  const groupDisabled =
+    b.group && state.blockGroups.find((g) => g.id === b.group)?.disabled;
   const effectivelyDisabled = !!(b.disabled || groupDisabled);
 
   if (effectivelyDisabled) li.classList.add("disabled");
@@ -334,11 +354,13 @@ take effect again if the group is later re-enabled.
 ### `renderBlockList()` changes to group header
 
 The group header currently has:
+
 ```
 [toggle ▾/▸]  [labelSpan]  [editBtn ✎]  [delBtn ×]
 ```
 
 After this change:
+
 ```
 [toggle ▾/▸]  [labelSpan]  [enableBtn ●/○]  [editBtn ✎]  [delBtn ×]
 ```
@@ -351,7 +373,7 @@ const enableBtn = document.createElement("button");
 enableBtn.className = "icon-btn toggle-btn";
 enableBtn.textContent = group.disabled ? "○" : "●";
 enableBtn.title = group.disabled ? "Enable group" : "Disable group";
-enableBtn.addEventListener("click", e => {
+enableBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   group.disabled = group.disabled ? undefined : true;
   mutated();
@@ -360,6 +382,7 @@ header.insertBefore(enableBtn, editBtn);
 ```
 
 When `group.disabled`, add `.disabled` class to the header element:
+
 ```js
 if (group.disabled) header.classList.add("disabled");
 ```
@@ -379,8 +402,8 @@ Same pattern as E3/E4: add toggle button leftmost in each `<li>`:
 
 ```js
 state.relationships.forEach((r, i) => {
-  const aName = state.participants.find(p => p.id === r.a)?.name ?? r.a;
-  const bName = state.participants.find(p => p.id === r.b)?.name ?? r.b;
+  const aName = state.participants.find((p) => p.id === r.a)?.name ?? r.a;
+  const bName = state.participants.find((p) => p.id === r.b)?.name ?? r.b;
   const li = document.createElement("li");
   if (r.disabled) li.classList.add("disabled");
 
@@ -420,6 +443,7 @@ state.relationships.forEach((r, i) => {
 
 Disabled participants still appear in the graph (so the user can see who they
 disabled and re-enable easily), but with distinct visual treatment:
+
 - Circle fill: `#e5e7eb` (same as `var(--border)`) rather than the default grey `#d1d5db`
 - Circle stroke: dashed, `var(--muted)` color
 - Label: muted color
@@ -429,22 +453,27 @@ disabled and re-enable easily), but with distinct visual treatment:
 After the circle `.join()` call, add/update a `.classed` and style call:
 
 ```js
-nodeCircleLayer.selectAll("circle")
-  .data(nodes, d => d.id)
+nodeCircleLayer
+  .selectAll("circle")
+  .data(nodes, (d) => d.id)
   .join(
-    enter => enter.append("circle")
-      .attr("class", "node-circle")
-      .attr("r", NODE_RADIUS)
-      .call(drag),
-    update => update,
-    exit => exit.remove()
+    (enter) =>
+      enter
+        .append("circle")
+        .attr("class", "node-circle")
+        .attr("r", NODE_RADIUS)
+        .call(drag),
+    (update) => update,
+    (exit) => exit.remove(),
   )
-  .attr("fill", d => {
-    if (state.participants.find(p => p.id === d.id)?.disabled) return "#e5e7eb";
+  .attr("fill", (d) => {
+    if (state.participants.find((p) => p.id === d.id)?.disabled)
+      return "#e5e7eb";
     return nodeColors[d.id] ?? "#d1d5db";
   })
-  .classed("node-disabled", d =>
-    !!state.participants.find(p => p.id === d.id)?.disabled
+  .classed(
+    "node-disabled",
+    (d) => !!state.participants.find((p) => p.id === d.id)?.disabled,
   );
 ```
 
@@ -490,64 +519,83 @@ Extends v3 with four optional arrays of indices into their respective
 base arrays. Arrays are omitted entirely when empty (keeps hash size minimal
 for common case).
 
-| Field | Type       | Indexes into | Meaning                                |
-| ----- | ---------- | ------------ | -------------------------------------- |
-| `dp`  | `number[]` | `p`          | Disabled participant indices           |
-| `dr`  | `number[]` | `r`          | Disabled relationship indices          |
-| `db`  | `number[]` | `b`          | Disabled ungrouped-block indices       |
-| `dg`  | `number[]` | `g`          | Disabled block-group indices           |
-| `dbg` | `number[]` | `bg`         | Disabled grouped-block indices         |
+| Field | Type       | Indexes into | Meaning                          |
+| ----- | ---------- | ------------ | -------------------------------- |
+| `dp`  | `number[]` | `p`          | Disabled participant indices     |
+| `dr`  | `number[]` | `r`          | Disabled relationship indices    |
+| `db`  | `number[]` | `b`          | Disabled ungrouped-block indices |
+| `dg`  | `number[]` | `g`          | Disabled block-group indices     |
+| `dbg` | `number[]` | `bg`         | Disabled grouped-block indices   |
 
 ### `encodeStateToHash` update
 
 ```js
 export function encodeStateToHash(state) {
   const idxOf = Object.fromEntries(state.participants.map((p, i) => [p.id, i]));
-  const groupIdxOf = Object.fromEntries(state.blockGroups.map((g, i) => [g.id, i]));
+  const groupIdxOf = Object.fromEntries(
+    state.blockGroups.map((g, i) => [g.id, i]),
+  );
 
-  const ungrouped = state.blocks.filter(b => !b.group);
-  const grouped   = state.blocks.filter(b =>  b.group);
+  const ungrouped = state.blocks.filter((b) => !b.group);
+  const grouped = state.blocks.filter((b) => b.group);
 
   const hasDisabled =
-    state.participants.some(p => p.disabled) ||
-    state.relationships.some(r => r.disabled) ||
-    state.blocks.some(b => b.disabled) ||
-    state.blockGroups.some(g => g.disabled);
+    state.participants.some((p) => p.disabled) ||
+    state.relationships.some((r) => r.disabled) ||
+    state.blocks.some((b) => b.disabled) ||
+    state.blockGroups.some((g) => g.disabled);
 
   const compact = {
     v: hasDisabled ? 4 : 3,
-    p: state.participants.map(p => [p.id, p.name]),
-    r: state.relationships.map(r => [idxOf[r.a], idxOf[r.b]]),
-    b: ungrouped.map(b => [idxOf[b.from], idxOf[b.to]]),
-    ...(grouped.length ? {
-      g: state.blockGroups.map(g => g.label),
-      bg: grouped.map(b => [idxOf[b.from], idxOf[b.to], groupIdxOf[b.group]]),
-    } : {}),
+    p: state.participants.map((p) => [p.id, p.name]),
+    r: state.relationships.map((r) => [idxOf[r.a], idxOf[r.b]]),
+    b: ungrouped.map((b) => [idxOf[b.from], idxOf[b.to]]),
+    ...(grouped.length
+      ? {
+          g: state.blockGroups.map((g) => g.label),
+          bg: grouped.map((b) => [
+            idxOf[b.from],
+            idxOf[b.to],
+            groupIdxOf[b.group],
+          ]),
+        }
+      : {}),
     pres: true,
   };
 
   if (hasDisabled) {
-    const dp  = state.participants.map((p, i) => p.disabled ? i : -1).filter(i => i >= 0);
-    const dr  = state.relationships.map((r, i) => r.disabled ? i : -1).filter(i => i >= 0);
-    const db  = ungrouped.map((b, i) => b.disabled ? i : -1).filter(i => i >= 0);
-    const dg  = state.blockGroups.map((g, i) => g.disabled ? i : -1).filter(i => i >= 0);
-    const dbg = grouped.map((b, i) => b.disabled ? i : -1).filter(i => i >= 0);
-    if (dp.length)  compact.dp  = dp;
-    if (dr.length)  compact.dr  = dr;
-    if (db.length)  compact.db  = db;
-    if (dg.length)  compact.dg  = dg;
+    const dp = state.participants
+      .map((p, i) => (p.disabled ? i : -1))
+      .filter((i) => i >= 0);
+    const dr = state.relationships
+      .map((r, i) => (r.disabled ? i : -1))
+      .filter((i) => i >= 0);
+    const db = ungrouped
+      .map((b, i) => (b.disabled ? i : -1))
+      .filter((i) => i >= 0);
+    const dg = state.blockGroups
+      .map((g, i) => (g.disabled ? i : -1))
+      .filter((i) => i >= 0);
+    const dbg = grouped
+      .map((b, i) => (b.disabled ? i : -1))
+      .filter((i) => i >= 0);
+    if (dp.length) compact.dp = dp;
+    if (dr.length) compact.dr = dr;
+    if (db.length) compact.db = db;
+    if (dg.length) compact.dg = dg;
     if (dbg.length) compact.dbg = dbg;
   }
 
   if (state.options.maxSolutions !== 5 || state.options.seed != null) {
     compact.o = {};
-    if (state.options.maxSolutions !== 5) compact.o.m = state.options.maxSolutions;
+    if (state.options.maxSolutions !== 5)
+      compact.o.m = state.options.maxSolutions;
     if (state.options.seed != null) compact.o.s = state.options.seed;
   }
 
   const sol = state.solutions[state.selectedSolution];
   if (sol) {
-    compact.c = sol.cycles.map(cycle => cycle.map(id => idxOf[id]));
+    compact.c = sol.cycles.map((cycle) => cycle.map((id) => idxOf[id]));
   }
 
   return `#v${compact.v}:` + hashEncode(compact);
@@ -580,18 +628,28 @@ disabled indices on top:
 ```js
 function decodeV4(compact) {
   if (compact.v !== 4 || !Array.isArray(compact.p)) return null;
-  const base = parseV3Fields(compact);  // handles p, r, b, g, bg, o, pres, c
+  const base = parseV3Fields(compact); // handles p, r, b, g, bg, o, pres, c
   if (!base) return null;
 
   // Apply disabled indices
-  (compact.dp  ?? []).forEach(i => { if (base.participants[i])  base.participants[i].disabled = true; });
-  (compact.dr  ?? []).forEach(i => { if (base.relationships[i]) base.relationships[i].disabled = true; });
+  (compact.dp ?? []).forEach((i) => {
+    if (base.participants[i]) base.participants[i].disabled = true;
+  });
+  (compact.dr ?? []).forEach((i) => {
+    if (base.relationships[i]) base.relationships[i].disabled = true;
+  });
   // ungrouped blocks are first in base.blocks
-  const ungroupedBlocks = base.blocks.filter(b => !b.group);
-  const groupedBlocks   = base.blocks.filter(b =>  b.group);
-  (compact.db  ?? []).forEach(i => { if (ungroupedBlocks[i]) ungroupedBlocks[i].disabled = true; });
-  (compact.dg  ?? []).forEach(i => { if (base.blockGroups[i]) base.blockGroups[i].disabled = true; });
-  (compact.dbg ?? []).forEach(i => { if (groupedBlocks[i])   groupedBlocks[i].disabled = true; });
+  const ungroupedBlocks = base.blocks.filter((b) => !b.group);
+  const groupedBlocks = base.blocks.filter((b) => b.group);
+  (compact.db ?? []).forEach((i) => {
+    if (ungroupedBlocks[i]) ungroupedBlocks[i].disabled = true;
+  });
+  (compact.dg ?? []).forEach((i) => {
+    if (base.blockGroups[i]) base.blockGroups[i].disabled = true;
+  });
+  (compact.dbg ?? []).forEach((i) => {
+    if (groupedBlocks[i]) groupedBlocks[i].disabled = true;
+  });
 
   return base;
 }
@@ -601,10 +659,10 @@ function decodeV4(compact) {
 
 ## Files to Change
 
-| File                   | Changes                                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| File                   | Changes                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
 | `server/web/app.js`    | E1–E8: filtering functions, all four render functions, restartGraph/recolorGraph, hash encode/decode |
-| `server/web/style.css` | E3: `.toggle-btn`, `li.disabled`, `.node-disabled`                                                 |
+| `server/web/style.css` | E3: `.toggle-btn`, `li.disabled`, `.node-disabled`                                                   |
 
 No HTML changes needed — all new UI elements are created via JS.
 

@@ -19,6 +19,7 @@ Go layer:
    and groups are filtered out in `effectiveBlocks()` / `stateToRequest()`.
 
 Moving this logic into `internal/dto`:
+
 - Lets the frontend send its data model directly (no expansion/filtering code)
 - Gives the **CLI the same richer input format** — it can accept `relationships`
   and `block_groups` in its JSON input with no additional work
@@ -220,6 +221,7 @@ func dtoToProblem(req SolveRequest) (ge.Problem, ge.Options, int64) {
 ### `server/handlers_test.go`
 
 Add tests:
+
 - Request with `relationships` produces same result as equivalent two-block request
 - Request with `disabled: true` on a participant excludes them + their blocks
 - Request with `disabled: true` on a block group excludes its blocks
