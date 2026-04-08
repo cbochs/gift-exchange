@@ -766,3 +766,165 @@ func FuzzSolve(f *testing.F) {
 		}
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Analyze
+// ---------------------------------------------------------------------------
+
+func TestAnalyze_Participants(t *testing.T) {
+	// 4-participant complete graph: each person can give to all 3 others.
+	p := Problem{
+		Participants: []Participant{
+			{ID: "a", Name: "Alice"},
+			{ID: "b", Name: "Bob"},
+			{ID: "c", Name: "Carol"},
+			{ID: "d", Name: "Dave"},
+		},
+	}
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.Participants) != 4 {
+		t.Fatalf("expected 4 ParticipantInfos, got %d", len(info.Participants))
+	}
+	// buildGraph sorts by ID, so order is a, b, c, d.
+	if info.Participants[0].ID != "a" || info.Participants[0].Name != "Alice" {
+		t.Errorf("unexpected first participant: %+v", info.Participants[0])
+	}
+	for _, pi := range info.Participants {
+		if len(pi.Recipients) != 3 {
+			t.Errorf("participant %q: expected 3 recipients, got %d: %v", pi.ID, len(pi.Recipients), pi.Recipients)
+		}
+		for _, r := range pi.Recipients {
+			if r == pi.ID {
+				t.Errorf("participant %q has self in recipient list", pi.ID)
+			}
+		}
+	}
+}
+
+func TestAnalyze_Recipients_WithBlocks(t *testing.T) {
+	// Block a->b: Alice can give to Carol and Dave but not Bob.
+	p := Problem{
+		Participants: []Participant{
+			{ID: "a", Name: "Alice"},
+			{ID: "b", Name: "Bob"},
+			{ID: "c", Name: "Carol"},
+			{ID: "d", Name: "Dave"},
+		},
+		Blocks: []Block{{From: "a", To: "b"}},
+	}
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	var alice ParticipantInfo
+	for _, pi := range info.Participants {
+		if pi.ID == "a" {
+			alice = pi
+		}
+	}
+	if len(alice.Recipients) != 2 {
+		t.Errorf("Alice: expected 2 recipients, got %v", alice.Recipients)
+	}
+	for _, r := range alice.Recipients {
+		if r == "b" {
+			t.Error("Alice: blocked recipient 'b' appeared in recipient list")
+		}
+	}
+}
+
+func TestAnalyze_HallViolations_None(t *testing.T) {
+	// Feasible two-group problem: Hall's condition holds.
+	info, err := Analyze(context.Background(), twoGroupProblem(4))
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) != 0 {
+		t.Errorf("expected no Hall violations for feasible problem, got %v", info.HallViolations)
+	}
+}
+
+func TestAnalyze_HallViolations_OutDegreeZero(t *testing.T) {
+	// Participant "a" is blocked from giving to everyone: simple Hall violation.
+	p := Problem{
+		Participants: []Participant{
+			{ID: "a", Name: "Alice"},
+			{ID: "b", Name: "Bob"},
+			{ID: "c", Name: "Carol"},
+		},
+		Blocks: []Block{{From: "a", To: "b"}, {From: "a", To: "c"}},
+	}
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) == 0 {
+		t.Fatal("expected a Hall violation, got none")
+	}
+	v := info.HallViolations[0]
+	found := false
+	for _, id := range v.Gifters {
+		if id == "a" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected 'a' in Hall violation gifters, got %v", v.Gifters)
+	}
+	if len(v.Recipients) >= len(v.Gifters) {
+		t.Errorf("Hall violation invariant broken: |recipients|=%d >= |gifters|=%d", len(v.Recipients), len(v.Gifters))
+	}
+	if info.HamiltonianPossible {
+		t.Error("HamiltonianPossible should be false when Hall is violated")
+	}
+}
+
+func TestAnalyze_HallViolations_GroupViolation(t *testing.T) {
+	// 6 participants: "0", "1", "2" can only give to "3" or "4".
+	// That's 3 gifters competing for 2 recipient slots — a group Hall violation
+	// that the simple degree check (checkHall) does not catch.
+	participants := makeParticipants(6)
+	// Block 0, 1, 2 from giving to each other and from giving to participant 5.
+	var blocks []Block
+	for _, from := range []string{"0", "1", "2"} {
+		for _, to := range []string{"0", "1", "2", "5"} {
+			if from != to {
+				blocks = append(blocks, Block{From: from, To: to})
+			}
+		}
+	}
+	p := Problem{Participants: participants, Blocks: blocks}
+
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) == 0 {
+		t.Fatal("expected a Hall violation, got none")
+	}
+	v := info.HallViolations[0]
+	if len(v.Gifters) <= len(v.Recipients) {
+		t.Errorf("Hall violation invariant broken: |gifters|=%d, |recipients|=%d", len(v.Gifters), len(v.Recipients))
+	}
+	// The violating set must include "0", "1", "2"; their neighbors are "3" and "4".
+	gifterSet := make(map[string]bool)
+	for _, id := range v.Gifters {
+		gifterSet[id] = true
+	}
+	recipSet := make(map[string]bool)
+	for _, id := range v.Recipients {
+		recipSet[id] = true
+	}
+	for _, id := range []string{"0", "1", "2"} {
+		if !gifterSet[id] {
+			t.Errorf("expected %q in Hall violation gifters %v", id, v.Gifters)
+		}
+	}
+	for _, id := range []string{"3", "4"} {
+		if !recipSet[id] {
+			t.Errorf("expected %q in Hall violation recipients %v", id, v.Recipients)
+		}
+	}
+}

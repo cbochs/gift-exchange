@@ -73,6 +73,21 @@ type Solution struct {
 	Score       Score
 }
 
+// ParticipantInfo summarizes one participant's valid gifting options.
+type ParticipantInfo struct {
+	ID         string
+	Name       string
+	Recipients []string // participant IDs this participant can give to (sorted by ID)
+}
+
+// HallViolation identifies a subset S of gifters whose collective valid
+// recipient set N(S) is smaller than S itself, making a complete assignment
+// impossible. len(Recipients) < len(Gifters) always holds.
+type HallViolation struct {
+	Gifters    []string // participant IDs in the violating subset S (sorted)
+	Recipients []string // participant IDs in N(S), the valid recipients of S (sorted)
+}
+
 // GraphInfo contains statistics about the gift exchange constraint graph,
 // returned by Analyze.
 type GraphInfo struct {
@@ -81,4 +96,9 @@ type GraphInfo struct {
 	MaxEdgeCount        int     // n*(n-1), fully-connected directed graph
 	Density             float64 // EdgeCount / MaxEdgeCount
 	HamiltonianPossible bool
+	// Participants lists each participant's valid recipients, sorted by participant ID.
+	Participants []ParticipantInfo
+	// HallViolations is nil when Hall's condition holds (a perfect matching exists).
+	// Otherwise it contains a witness subset S where |N(S)| < |S|.
+	HallViolations []HallViolation
 }

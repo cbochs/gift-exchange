@@ -218,6 +218,42 @@ func cmdAnalyze(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "Edges:         %d of %d possible (%.1f%% density)\n",
 		info.EdgeCount, info.MaxEdgeCount, info.Density*100)
 	fmt.Fprintf(stdout, "Hamiltonian:   %s\n", hamiltonian)
+
+	// Per-participant recipient lists.
+	nameOf := make(map[string]string, len(info.Participants))
+	for _, pi := range info.Participants {
+		nameOf[pi.ID] = pi.Name
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "Recipients:")
+	for _, pi := range info.Participants {
+		recipNames := make([]string, len(pi.Recipients))
+		for i, id := range pi.Recipients {
+			recipNames[i] = nameOf[id]
+		}
+		fmt.Fprintf(stdout, "  %-20s (%d): %s\n",
+			pi.Name, len(pi.Recipients), strings.Join(recipNames, ", "))
+	}
+
+	// Hall condition summary.
+	fmt.Fprintln(stdout)
+	if len(info.HallViolations) == 0 {
+		fmt.Fprintln(stdout, "Hall condition: satisfied")
+	} else {
+		fmt.Fprintln(stdout, "Hall condition: violated")
+		for _, v := range info.HallViolations {
+			gifterNames := make([]string, len(v.Gifters))
+			for i, id := range v.Gifters {
+				gifterNames[i] = nameOf[id]
+			}
+			recipNames := make([]string, len(v.Recipients))
+			for i, id := range v.Recipients {
+				recipNames[i] = nameOf[id]
+			}
+			fmt.Fprintf(stdout, "  Gifters    (%d): %s\n", len(v.Gifters), strings.Join(gifterNames, ", "))
+			fmt.Fprintf(stdout, "  Recipients (%d): %s\n", len(v.Recipients), strings.Join(recipNames, ", "))
+		}
+	}
 	return 0
 }
 
