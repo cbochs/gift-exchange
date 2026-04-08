@@ -165,14 +165,17 @@ func TestCLI_Analyze(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\n", code)
 	}
-	for _, want := range []string{"Participants:", "Edges:", "Hamiltonian:"} {
+	for _, want := range []string{"Participants:", "Edges:", "Hall condition:", "Dead edges:", "Recipients:"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q:\n%s", want, out)
 		}
 	}
-	// n=4 complete graph has a Hamiltonian cycle.
-	if !strings.Contains(out, "Hamiltonian:   yes") {
-		t.Errorf("expected 'Hamiltonian: yes' for complete 4-node graph:\n%s", out)
+	// n=4 complete graph: Hall is satisfied, no dead edges.
+	if !strings.Contains(out, "Hall condition: satisfied") {
+		t.Errorf("expected 'Hall condition: satisfied' for complete 4-node graph:\n%s", out)
+	}
+	if !strings.Contains(out, "Dead edges: none") {
+		t.Errorf("expected 'Dead edges: none' for complete 4-node graph:\n%s", out)
 	}
 }
 

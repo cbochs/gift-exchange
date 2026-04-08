@@ -88,17 +88,30 @@ type HallViolation struct {
 	Recipients []string // participant IDs in N(S), the valid recipients of S (sorted)
 }
 
+// DeadEdge is a valid (non-blocked) directed edge that cannot be used in
+// some or all solution types.
+type DeadEdge struct {
+	Gifter    string // participant ID
+	Recipient string // participant ID
+}
+
 // GraphInfo contains statistics about the gift exchange constraint graph,
 // returned by Analyze.
 type GraphInfo struct {
-	ParticipantCount    int
-	EdgeCount           int
-	MaxEdgeCount        int     // n*(n-1), fully-connected directed graph
-	Density             float64 // EdgeCount / MaxEdgeCount
-	HamiltonianPossible bool
+	ParticipantCount int
+	EdgeCount        int
+	MaxEdgeCount     int     // n*(n-1), fully-connected directed graph
+	Density          float64 // EdgeCount / MaxEdgeCount
 	// Participants lists each participant's valid recipients, sorted by participant ID.
 	Participants []ParticipantInfo
 	// HallViolations is nil when Hall's condition holds (a perfect matching exists).
 	// Otherwise it contains a witness subset S where |N(S)| < |S|.
 	HallViolations []HallViolation
+	// SolutionDeadEdges lists valid edges where fixing u→v makes any valid complete
+	// assignment impossible. nil when Hall violations exist (analysis skipped).
+	SolutionDeadEdges []DeadEdge
+	// HamiltonianDeadEdges lists valid edges where fixing u→v still allows some
+	// multi-cycle solution but rules out any Hamiltonian cycle. Excludes edges
+	// already in SolutionDeadEdges. nil when Hall violations exist (skipped).
+	HamiltonianDeadEdges []DeadEdge
 }

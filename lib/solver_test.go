@@ -876,9 +876,6 @@ func TestAnalyze_HallViolations_OutDegreeZero(t *testing.T) {
 	if len(v.Recipients) >= len(v.Gifters) {
 		t.Errorf("Hall violation invariant broken: |recipients|=%d >= |gifters|=%d", len(v.Recipients), len(v.Gifters))
 	}
-	if info.HamiltonianPossible {
-		t.Error("HamiltonianPossible should be false when Hall is violated")
-	}
 }
 
 func TestAnalyze_HallViolations_GroupViolation(t *testing.T) {
@@ -926,5 +923,130 @@ func TestAnalyze_HallViolations_GroupViolation(t *testing.T) {
 		if !recipSet[id] {
 			t.Errorf("expected %q in Hall violation recipients %v", id, v.Recipients)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Dead edge analysis
+// ---------------------------------------------------------------------------
+
+func TestAnalyze_DeadEdges_None(t *testing.T) {
+	// Complete 4-node graph: every edge can appear in a Hamiltonian cycle.
+	info, err := Analyze(context.Background(), Problem{Participants: makeParticipants(4)})
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.SolutionDeadEdges) != 0 {
+		t.Errorf("expected no solution-dead edges, got %v", info.SolutionDeadEdges)
+	}
+	if len(info.HamiltonianDeadEdges) != 0 {
+		t.Errorf("expected no Hamiltonian-dead edges, got %v", info.HamiltonianDeadEdges)
+	}
+}
+
+func TestAnalyze_DeadEdges_SolutionDead(t *testing.T) {
+	// 3 participants: c→b is blocked.
+	// adj[a]={b,c}, adj[b]={a,c}, adj[c]={a}
+	//
+	// Edge a→c is solution-dead: fixing a→c leaves gifters {b,c} competing
+	// for recipients {a,b}. c can only give to a, b can give to a or c (excluded).
+	// Both want a; c gets nothing. Matching size < 2.
+	//
+	// Edge b→a is also solution-dead: fixing b→a leaves gifter c with only
+	// recipient a, which is excluded as recipient.
+	p := Problem{
+		Participants: []Participant{
+			{ID: "a", Name: "Alice"},
+			{ID: "b", Name: "Bob"},
+			{ID: "c", Name: "Carol"},
+		},
+		Blocks: []Block{{From: "c", To: "b"}},
+	}
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) != 0 {
+		t.Fatalf("unexpected Hall violation: %v", info.HallViolations)
+	}
+
+	deadSet := make(map[[2]string]bool)
+	for _, e := range info.SolutionDeadEdges {
+		deadSet[[2]string{e.Gifter, e.Recipient}] = true
+	}
+	for _, want := range [][2]string{{"a", "c"}, {"b", "a"}} {
+		if !deadSet[want] {
+			t.Errorf("expected solution-dead edge %v→%v, got SolutionDeadEdges=%v",
+				want[0], want[1], info.SolutionDeadEdges)
+		}
+	}
+	if len(info.HamiltonianDeadEdges) != 0 {
+		t.Errorf("expected no Hamiltonian-dead edges for 3-node graph, got %v", info.HamiltonianDeadEdges)
+	}
+}
+
+func TestAnalyze_DeadEdges_HamiltonianDead(t *testing.T) {
+	// The counterexample graph has exactly one Hamiltonian cycle: 0→1→5→4→3→2→0.
+	// Edge 1→0 is valid (adj[1]={0,5}) but Hamiltonian-dead: there is no
+	// Hamiltonian path from 0 back to 1 (0 can only go to 5, then 5→4→3→{2,0,1},
+	// and 2's neighbors {3,0,4} cannot reach 1 without revisiting).
+	p := counterexampleProblem()
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) != 0 {
+		t.Fatalf("unexpected Hall violation: %v", info.HallViolations)
+	}
+
+	solutionDeadSet := make(map[[2]string]bool)
+	for _, e := range info.SolutionDeadEdges {
+		solutionDeadSet[[2]string{e.Gifter, e.Recipient}] = true
+	}
+	hamiltonianDeadSet := make(map[[2]string]bool)
+	for _, e := range info.HamiltonianDeadEdges {
+		hamiltonianDeadSet[[2]string{e.Gifter, e.Recipient}] = true
+	}
+
+	// 1→0 must be Hamiltonian-dead but not solution-dead.
+	key := [2]string{"1", "0"}
+	if solutionDeadSet[key] {
+		t.Error("edge 1→0 should NOT be solution-dead")
+	}
+	if !hamiltonianDeadSet[key] {
+		t.Errorf("edge 1→0 should be Hamiltonian-dead, got HamiltonianDeadEdges=%v", info.HamiltonianDeadEdges)
+	}
+
+	// SolutionDeadEdges must not overlap with HamiltonianDeadEdges.
+	for _, e := range info.HamiltonianDeadEdges {
+		if solutionDeadSet[[2]string{e.Gifter, e.Recipient}] {
+			t.Errorf("edge %v→%v appears in both SolutionDeadEdges and HamiltonianDeadEdges", e.Gifter, e.Recipient)
+		}
+	}
+}
+
+func TestAnalyze_DeadEdges_SkippedWhenHallViolated(t *testing.T) {
+	// Participant "a" is blocked from giving to everyone: Hall violation.
+	// Dead edge analysis must be skipped; both slices must be nil.
+	p := Problem{
+		Participants: []Participant{
+			{ID: "a", Name: "Alice"},
+			{ID: "b", Name: "Bob"},
+			{ID: "c", Name: "Carol"},
+		},
+		Blocks: []Block{{From: "a", To: "b"}, {From: "a", To: "c"}},
+	}
+	info, err := Analyze(context.Background(), p)
+	if err != nil {
+		t.Fatalf("Analyze error: %v", err)
+	}
+	if len(info.HallViolations) == 0 {
+		t.Fatal("expected Hall violations, got none")
+	}
+	if info.SolutionDeadEdges != nil {
+		t.Errorf("SolutionDeadEdges should be nil when Hall violated, got %v", info.SolutionDeadEdges)
+	}
+	if info.HamiltonianDeadEdges != nil {
+		t.Errorf("HamiltonianDeadEdges should be nil when Hall violated, got %v", info.HamiltonianDeadEdges)
 	}
 }

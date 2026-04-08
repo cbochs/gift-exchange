@@ -2,13 +2,12 @@ package giftexchange
 
 import (
 	"context"
-	"math/rand"
 )
 
 // Analyze returns graph statistics for the given problem, including per-participant
-// recipient lists, Hall condition diagnostics, and whether a Hamiltonian cycle is
-// possible. The Hamiltonian check runs a full DFS and may be slow for large,
-// heavily-constrained graphs; cancel ctx to abort it.
+// recipient lists, Hall condition diagnostics, and dead edge analysis.
+// The dead edge analysis may be slow for large, heavily-constrained graphs;
+// cancel ctx to abort it.
 func Analyze(ctx context.Context, p Problem) (GraphInfo, error) {
 	if err := validateStructural(p); err != nil {
 		return GraphInfo{}, err
@@ -45,29 +44,119 @@ func Analyze(ctx context.Context, p Problem) (GraphInfo, error) {
 		}
 	}
 
-	// Hall condition check via max bipartite matching. If a Hall violation exists,
-	// a Hamiltonian cycle is impossible and the DFS can be skipped.
+	// Hall condition check via max bipartite matching.
 	violations := hallViolations(g)
 
-	hamiltonian := false
+	// Dead edge analysis is skipped when Hall violations exist.
+	var solutionDead, hamiltonianDead []DeadEdge
 	if len(violations) == 0 {
-		// hamiltonianSolver checks ctx internally (every 256 calls).
-		rng := rand.New(rand.NewSource(0))
-		_, hamiltonian = hamiltonianSolver(ctx, g, rng)
-		if ctx.Err() != nil {
-			return GraphInfo{}, ctx.Err()
+		for i := range n {
+			for _, j := range g.adj[i] {
+				if ctx.Err() != nil {
+					return GraphInfo{}, ctx.Err()
+				}
+				if !canCompleteMatching(g, i, j) {
+					solutionDead = append(solutionDead, DeadEdge{
+						Gifter:    g.ids[i],
+						Recipient: g.ids[j],
+					})
+				} else if !hamiltonianPathExists(ctx, g, j, i) {
+					if ctx.Err() != nil {
+						return GraphInfo{}, ctx.Err()
+					}
+					hamiltonianDead = append(hamiltonianDead, DeadEdge{
+						Gifter:    g.ids[i],
+						Recipient: g.ids[j],
+					})
+				}
+			}
 		}
 	}
 
 	return GraphInfo{
-		ParticipantCount:    n,
-		EdgeCount:           edgeCount,
-		MaxEdgeCount:        maxEdgeCount,
-		Density:             density,
-		HamiltonianPossible: hamiltonian,
-		Participants:        participants,
-		HallViolations:      violations,
+		ParticipantCount:     n,
+		EdgeCount:            edgeCount,
+		MaxEdgeCount:         maxEdgeCount,
+		Density:              density,
+		Participants:         participants,
+		HallViolations:       violations,
+		SolutionDeadEdges:    solutionDead,
+		HamiltonianDeadEdges: hamiltonianDead,
 	}, nil
+}
+
+// canCompleteMatching reports whether the remaining n-1 participants can be
+// bipartite-matched after fixing gifter excludeGifter → recipient excludeRecipient.
+func canCompleteMatching(g *graph, excludeGifter, excludeRecipient int) bool {
+	matchLeft := make([]int, g.n)
+	matchRight := make([]int, g.n)
+	for i := range g.n {
+		matchLeft[i] = -1
+		matchRight[i] = -1
+	}
+
+	var augment func(gifter int, visited []bool) bool
+	augment = func(gifter int, visited []bool) bool {
+		for _, r := range g.adj[gifter] {
+			if r == excludeRecipient || visited[r] {
+				continue
+			}
+			visited[r] = true
+			if matchRight[r] == -1 || augment(matchRight[r], visited) {
+				matchLeft[gifter] = r
+				matchRight[r] = gifter
+				return true
+			}
+		}
+		return false
+	}
+
+	matched := 0
+	for i := range g.n {
+		if i == excludeGifter {
+			continue
+		}
+		visited := make([]bool, g.n)
+		visited[excludeRecipient] = true // mark excluded recipient as seen so it's skipped
+		if augment(i, visited) {
+			matched++
+		}
+	}
+	return matched == g.n-1
+}
+
+// hamiltonianPathExists reports whether a Hamiltonian path from start to end
+// exists, visiting all n participants exactly once.
+// end is reserved: it may not be visited as an intermediate node.
+func hamiltonianPathExists(ctx context.Context, g *graph, start, end int) bool {
+	visited := make([]bool, g.n)
+	visited[start] = true
+	calls := 0
+
+	var dfs func(cur, depth int) bool
+	dfs = func(cur, depth int) bool {
+		calls++
+		if calls&0xFF == 0 && ctx.Err() != nil {
+			return false
+		}
+		if depth == g.n-1 {
+			// All nodes visited except end; check if end is reachable.
+			return g.isEdge(cur, end)
+		}
+		for _, next := range g.adj[cur] {
+			if visited[next] || next == end {
+				continue
+			}
+			visited[next] = true
+			if dfs(next, depth+1) {
+				return true
+			}
+			visited[next] = false
+		}
+		return false
+	}
+
+	return dfs(start, 1)
 }
 
 // hallViolations finds whether a perfect bipartite matching exists for the

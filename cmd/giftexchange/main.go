@@ -210,30 +210,14 @@ func cmdAnalyze(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	hamiltonian := "no"
-	if info.HamiltonianPossible {
-		hamiltonian = "yes"
-	}
-	fmt.Fprintf(stdout, "Participants:  %d\n", info.ParticipantCount)
-	fmt.Fprintf(stdout, "Edges:         %d of %d possible (%.1f%% density)\n",
-		info.EdgeCount, info.MaxEdgeCount, info.Density*100)
-	fmt.Fprintf(stdout, "Hamiltonian:   %s\n", hamiltonian)
-
-	// Per-participant recipient lists.
 	nameOf := make(map[string]string, len(info.Participants))
 	for _, pi := range info.Participants {
 		nameOf[pi.ID] = pi.Name
 	}
-	fmt.Fprintln(stdout)
-	fmt.Fprintln(stdout, "Recipients:")
-	for _, pi := range info.Participants {
-		recipNames := make([]string, len(pi.Recipients))
-		for i, id := range pi.Recipients {
-			recipNames[i] = nameOf[id]
-		}
-		fmt.Fprintf(stdout, "  %-20s (%d): %s\n",
-			pi.Name, len(pi.Recipients), strings.Join(recipNames, ", "))
-	}
+
+	fmt.Fprintf(stdout, "Participants:  %d\n", info.ParticipantCount)
+	fmt.Fprintf(stdout, "Edges:         %d of %d possible (%.1f%% density)\n",
+		info.EdgeCount, info.MaxEdgeCount, info.Density*100)
 
 	// Hall condition summary.
 	fmt.Fprintln(stdout)
@@ -254,6 +238,70 @@ func cmdAnalyze(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  Recipients (%d): %s\n", len(v.Recipients), strings.Join(recipNames, ", "))
 		}
 	}
+
+	// Dead edge summary.
+	fmt.Fprintln(stdout)
+	if len(info.HallViolations) > 0 {
+		fmt.Fprintln(stdout, "Dead edges: skipped (Hall condition violated)")
+	} else if len(info.SolutionDeadEdges) == 0 && len(info.HamiltonianDeadEdges) == 0 {
+		fmt.Fprintln(stdout, "Dead edges: none")
+	} else {
+		fmt.Fprintln(stdout, "Dead edges:")
+		// Group by gifter: collect solution-dead and Hamiltonian-dead per gifter.
+		type gifterEntry struct {
+			solutionDead    []string
+			hamiltonianDead []string
+		}
+		gifterMap := make(map[string]*gifterEntry)
+		gifterOrder := []string{}
+		ensureGifter := func(id string) {
+			if _, ok := gifterMap[id]; !ok {
+				gifterMap[id] = &gifterEntry{}
+				gifterOrder = append(gifterOrder, id)
+			}
+		}
+		for _, e := range info.SolutionDeadEdges {
+			ensureGifter(e.Gifter)
+			gifterMap[e.Gifter].solutionDead = append(gifterMap[e.Gifter].solutionDead, nameOf[e.Recipient])
+		}
+		for _, e := range info.HamiltonianDeadEdges {
+			ensureGifter(e.Gifter)
+			gifterMap[e.Gifter].hamiltonianDead = append(gifterMap[e.Gifter].hamiltonianDead, nameOf[e.Recipient])
+		}
+		// Compute column width for alignment.
+		maxNameLen := 0
+		for _, id := range gifterOrder {
+			n := len(nameOf[id])
+			if n > maxNameLen {
+				maxNameLen = n
+			}
+		}
+		for _, id := range gifterOrder {
+			entry := gifterMap[id]
+			gifterName := nameOf[id]
+			if len(entry.solutionDead) > 0 {
+				fmt.Fprintf(stdout, "  %-*s  cannot gift to (no solution):       %s\n",
+					maxNameLen, gifterName, strings.Join(entry.solutionDead, ", "))
+			}
+			if len(entry.hamiltonianDead) > 0 {
+				fmt.Fprintf(stdout, "  %-*s  cannot gift to (Hamiltonian cycle): %s\n",
+					maxNameLen, gifterName, strings.Join(entry.hamiltonianDead, ", "))
+			}
+		}
+	}
+
+	// Per-participant recipient lists.
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "Recipients:")
+	for _, pi := range info.Participants {
+		recipNames := make([]string, len(pi.Recipients))
+		for i, id := range pi.Recipients {
+			recipNames[i] = nameOf[id]
+		}
+		fmt.Fprintf(stdout, "  %-20s (%d): %s\n",
+			pi.Name, len(pi.Recipients), strings.Join(recipNames, ", "))
+	}
+
 	return 0
 }
 
