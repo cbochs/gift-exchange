@@ -38,9 +38,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: None — all planned phases complete.
-**Last session**: Completed Phase 16 (Backend Enrichment). Added `RelationshipDTO`, `BlockGroupDTO` to `internal/dto`; `Disabled`/`Group` fields on `BlockDTO`/`ParticipantDTO`; `dto.BuildProblem()` shared by CLI and server for relationship expansion, disabled filtering, and block group flattening. CLI `inputDoc` now accepts `relationships` and `block_groups`. Server `SolveRequest` updated. Frontend `stateToRequest` simplified to send raw state; `effectiveBlocks`/`activeParticipants` removed from API path; graph still filters locally for D3 layout.
-**Next action**: See `plans/phase9-required.md` for Required Assignments.
+**Active phase**: Phase 17 — Dead Edge Analysis (`plans/phase17-dead-edge-analysis.md`).
+**Last session**: Completed Phase 16 (Backend Enrichment). Added `RelationshipDTO`, `BlockGroupDTO` to `internal/dto`; `Disabled`/`Group` fields on `BlockDTO`/`ParticipantDTO`; `dto.BuildProblem()` shared by CLI and server for relationship expansion, disabled filtering, and block group flattening. CLI `inputDoc` now accepts `relationships` and `block_groups`. Server `SolveRequest` updated. Frontend `stateToRequest` simplified to send raw state; `effectiveBlocks`/`activeParticipants` removed from API path; graph still filters locally for D3 layout. Started Phase 17: updated `lib/types.go` — removed `HamiltonianPossible bool`, added `DeadEdge`, `SolutionDeadEdges`, `HamiltonianDeadEdges` to `GraphInfo`. Added Hall violation detection (`hallViolations`) to `lib/analyze.go` and 5 Analyze tests to `lib/solver_test.go`. Compiler error in `lib/analyze.go` remains (still references removed `HamiltonianPossible` field).
+**Next action**: Rewrite `lib/analyze.go` — remove Hamiltonian DFS, add `canCompleteMatching` + `hamiltonianPathExists`, populate dead edge fields. Then update tests, CLI output, and CLI test.
 
 ---
 
@@ -59,13 +59,13 @@ gift-exchange/
 │   ├── types.go               ← public types + ErrInvalid + ErrInfeasible + DefaultMaxSolutions + NewSeed
 │   ├── graph.go               ← buildGraph, isEdge, shuffled
 │   ├── score.go               ← decomposeCycles, canonicalize, scoreOf, Score.Better
-│   ├── analyze.go             ← Analyze (exported) — graph stats + Hamiltonian check
+│   ├── analyze.go             ← Analyze (exported) — graph stats, Hall violations, dead edge analysis (Phase 17 in progress)
 │   ├── solver.go              ← Validate, validateStructural, checkHall, solverFunc, hamiltonianSolver, constrainedSolver, Solve
 │   └── solver_test.go         ← unit + integration + property + fuzz tests (all passing)
 ├── internal/
 │   └── dto/                   ← COMPLETE — shared wire types; imported by CLI and server
-│       ├── types.go           ← ParticipantDTO, BlockDTO, AssignmentDTO, ScoreDTO, SolutionDTO
-│       ├── mapping.go         ← ParticipantsToLib/FromLib, BlocksToLib/FromLib, SolutionsFromLib
+│       ├── types.go           ← ParticipantDTO, BlockDTO, RelationshipDTO, BlockGroupDTO, AssignmentDTO, ScoreDTO, SolutionDTO
+│       ├── mapping.go         ← ParticipantsToLib/FromLib, BlocksToLib/FromLib, SolutionsFromLib, BuildProblem
 │       └── mapping_test.go    ← roundtrip and conversion tests
 ├── cmd/
 │   ├── giftexchange/          ← COMPLETE — CLI thin wrapper around lib
@@ -97,7 +97,9 @@ gift-exchange/
 │   ├── phase7-deployment.md   ← COMPLETE
 │   ├── phase8-refactor.md     ← COMPLETE — refactoring & code quality (R1–R12)
 │   ├── phase9-required.md     ← FUTURE WORK — required assignments (full-stack)
-│   └── phase10-persistence.md ← FUTURE WORK — localStorage + link sharing (frontend-only)
+│   ├── phase10-persistence.md ← FUTURE WORK — localStorage + link sharing (frontend-only)
+│   ├── phase16-backend-enrichment.md ← COMPLETE
+│   └── phase17-dead-edge-analysis.md ← IN PROGRESS — dead edge analysis (lib + CLI)
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
     ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete
