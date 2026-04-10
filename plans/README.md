@@ -23,6 +23,7 @@
 - [x] **Phase 15 — Enable/Disable** (`plans/phase15-enable-disable.md`): Toggle participants, blocks, block groups, and relationships inactive without deleting them. Disabled items are filtered before solving. Hash v4 encodes disabled state. Frontend-only.
 - [x] **Phase 16 — Backend Enrichment** (`plans/phase16-backend-enrichment.md`): Move relationship expansion, block-group flattening, and enabled/disabled filtering into `internal/dto.BuildProblem`, shared by CLI and server. Frontend sends its data model directly. Full-stack.
 - [x] **Phase 17 — Dead Edge Analysis** (`plans/phase17-dead-edge-analysis.md`): Per-edge dead edge analysis in `Analyze`: solution-dead (fixing u→v breaks bipartite matching) and Hamiltonian-dead (fixing u→v blocks any Hamiltonian cycle). Replaces global `HamiltonianPossible` flag. Lib + CLI.
+- [ ] **Phase 18 — Analyze Cleanup** (`plans/phase18-analyze-cleanup.md`): Extract shared `bipartiteMatch` primitive; complete dead edge test coverage; fix doc comment ambiguity; minor CLI output ordering fix. Lib + CLI.
 
 ---
 

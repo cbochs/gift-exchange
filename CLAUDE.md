@@ -38,9 +38,9 @@ Do not start any implementation work before reading the relevant phase plan.
 
 ## Current State (update this each session)
 
-**Active phase**: None — Phase 17 complete. Awaiting next phase.
-**Last session**: Completed Phase 17 (Dead Edge Analysis). Rewrote `lib/analyze.go`: removed Hamiltonian DFS and `math/rand` import; added `canCompleteMatching` (augmenting-path bipartite matching on n-1 subgraph) and `hamiltonianPathExists` (DFS with ctx check every 256 calls); `Analyze` now populates `SolutionDeadEdges` and `HamiltonianDeadEdges`, skipping both when Hall violations exist. Added 4 dead edge tests to `lib/solver_test.go`; removed stale `HamiltonianPossible` ref from existing test. Updated CLI: new output order (Participants/Edges → Hall → Dead edges → Recipients), removed Hamiltonian line, added dead edge section grouped by gifter. Updated `TestCLI_Analyze`. All tests pass, `go vet` clean.
-**Next action**: Define and start Phase 18.
+**Active phase**: Phase 18 — Analyze Cleanup (`plans/phase18-analyze-cleanup.md`). Plan written; awaiting approval to implement.
+**Last session**: Completed Phase 17 (Dead Edge Analysis). Wrote Phase 18 plan: extract shared `bipartiteMatch` primitive (dedup augmenting-path logic in `hallViolations`/`canCompleteMatching`); complete dead edge test coverage (full set assertions, all-Hamiltonian-dead case, ctx cancellation); fix misleading `nil` doc comments in `types.go`; inline `ensureGifter` and fix output ordering in CLI.
+**Next action**: Implement Phase 18 after plan approval.
 
 ---
 
@@ -99,7 +99,8 @@ gift-exchange/
 │   ├── phase9-required.md     ← FUTURE WORK — required assignments (full-stack)
 │   ├── phase10-persistence.md ← FUTURE WORK — localStorage + link sharing (frontend-only)
 │   ├── phase16-backend-enrichment.md ← COMPLETE
-│   └── phase17-dead-edge-analysis.md ← COMPLETE — dead edge analysis (lib + CLI)
+│   ├── phase17-dead-edge-analysis.md ← COMPLETE — dead edge analysis (lib + CLI)
+│   └── phase18-analyze-cleanup.md    ← PLAN — bipartite matching dedup, test coverage, doc fixes
 └── experiments/
     ├── go.mod                 ← imports root module via replace directive
     ├── merge_completeness/    ← proves greedy 2-opt merge is incomplete
