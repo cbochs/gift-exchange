@@ -29,7 +29,11 @@ func writeTempInput(t *testing.T, content string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("close temporary input: %v", err)
+		}
+	}()
 	if _, err := f.WriteString(content); err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +94,7 @@ func TestCLI_Solve_JSON(t *testing.T) {
 	}
 	var resp struct {
 		Solutions []dto.SolutionDTO `json:"solutions"`
-		Feasible  bool          `json:"feasible"`
+		Feasible  bool              `json:"feasible"`
 	}
 	if err := json.Unmarshal([]byte(out), &resp); err != nil {
 		t.Fatalf("invalid JSON output: %v\n%s", err, out)

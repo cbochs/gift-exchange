@@ -1,0 +1,9 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      # CLI handlers report failures through exit codes rather than each write.
+      exclude-functions:
+        - fmt.Fprintln
+        - fmt.Fprintf

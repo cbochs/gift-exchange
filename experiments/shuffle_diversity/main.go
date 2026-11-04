@@ -14,9 +14,9 @@
 //   - Whether the solution space is sampled uniformly
 //
 // Tested on three graphs:
-//   1. Dense (complete minus self-edges): large solution space
-//   2. Moderately sparse: typical gift exchange constraints
-//   3. Very sparse: near-exhaustible solution space
+//  1. Dense (complete minus self-edges): large solution space
+//  2. Moderately sparse: typical gift exchange constraints
+//  3. Very sparse: near-exhaustible solution space
 package main
 
 import (
@@ -83,18 +83,6 @@ func canonicalize(assign []int) string {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, " | ")
-}
-
-// minCycleLen returns the length of the shortest cycle in an assignment.
-func minCycleLen(assign []int) int {
-	cycles := decomposeCycles(assign)
-	min := len(assign)
-	for _, c := range cycles {
-		if len(c) < min {
-			min = len(c)
-		}
-	}
-	return min
 }
 
 // --- Cycle-merge post-processor ---
@@ -357,10 +345,10 @@ func main() {
 	}
 	g1 := &Graph{n: n1, adj: adjDense}
 	fmt.Println("  Strategy                        distinct  collisions       failures  hamiltonian")
-	runBenchmark("global shuffle, no merge",   func(r *rand.Rand) []int { return globalShuffleSolve(g1, r, 2, false) }, runs, seed)
+	runBenchmark("global shuffle, no merge", func(r *rand.Rand) []int { return globalShuffleSolve(g1, r, 2, false) }, runs, seed)
 	runBenchmark("per-node shuffle, no merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g1, r, 2, false) }, runs, seed)
-	runBenchmark("global shuffle + merge",     func(r *rand.Rand) []int { return globalShuffleSolve(g1, r, 2, true) }, runs, seed)
-	runBenchmark("per-node shuffle + merge",   func(r *rand.Rand) []int { return perNodeShuffleSolve(g1, r, 2, true) }, runs, seed)
+	runBenchmark("global shuffle + merge", func(r *rand.Rand) []int { return globalShuffleSolve(g1, r, 2, true) }, runs, seed)
+	runBenchmark("per-node shuffle + merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g1, r, 2, true) }, runs, seed)
 
 	// -----------------------------------------------------------------------
 	// Graph 2: Moderately sparse — n=8, each node has ~4 valid recipients.
@@ -379,10 +367,10 @@ func main() {
 	}
 	g2 := &Graph{n: 8, adj: adjMod}
 	fmt.Println("  Strategy                        distinct  collisions       failures  hamiltonian")
-	runBenchmark("global shuffle, no merge",   func(r *rand.Rand) []int { return globalShuffleSolve(g2, r, 3, false) }, runs, seed)
+	runBenchmark("global shuffle, no merge", func(r *rand.Rand) []int { return globalShuffleSolve(g2, r, 3, false) }, runs, seed)
 	runBenchmark("per-node shuffle, no merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g2, r, 3, false) }, runs, seed)
-	runBenchmark("global shuffle + merge",     func(r *rand.Rand) []int { return globalShuffleSolve(g2, r, 3, true) }, runs, seed)
-	runBenchmark("per-node shuffle + merge",   func(r *rand.Rand) []int { return perNodeShuffleSolve(g2, r, 3, true) }, runs, seed)
+	runBenchmark("global shuffle + merge", func(r *rand.Rand) []int { return globalShuffleSolve(g2, r, 3, true) }, runs, seed)
+	runBenchmark("per-node shuffle + merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g2, r, 3, true) }, runs, seed)
 
 	// -----------------------------------------------------------------------
 	// Graph 3: Very sparse — n=6, each node has exactly 2 valid recipients.
@@ -399,10 +387,10 @@ func main() {
 	}
 	g3 := &Graph{n: 6, adj: adjSparse}
 	fmt.Println("  Strategy                        distinct  collisions       failures  hamiltonian")
-	s1 := runBenchmark("global shuffle, no merge",   func(r *rand.Rand) []int { return globalShuffleSolve(g3, r, 2, false) }, runs, seed)
+	s1 := runBenchmark("global shuffle, no merge", func(r *rand.Rand) []int { return globalShuffleSolve(g3, r, 2, false) }, runs, seed)
 	s2 := runBenchmark("per-node shuffle, no merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g3, r, 2, false) }, runs, seed)
-	runBenchmark("global shuffle + merge",     func(r *rand.Rand) []int { return globalShuffleSolve(g3, r, 2, true) }, runs, seed)
-	runBenchmark("per-node shuffle + merge",   func(r *rand.Rand) []int { return perNodeShuffleSolve(g3, r, 2, true) }, runs, seed)
+	runBenchmark("global shuffle + merge", func(r *rand.Rand) []int { return globalShuffleSolve(g3, r, 2, true) }, runs, seed)
+	runBenchmark("per-node shuffle + merge", func(r *rand.Rand) []int { return perNodeShuffleSolve(g3, r, 2, true) }, runs, seed)
 
 	// Show the actual solution distribution for the very sparse graph
 	fmt.Println()

@@ -149,8 +149,8 @@ func TestBuildProblem_DisabledRelationship(t *testing.T) {
 func TestBuildProblem_DisabledGroup(t *testing.T) {
 	participants := []dto.ParticipantDTO{{ID: "a", Name: "Alice"}, {ID: "b", Name: "Bob"}, {ID: "c", Name: "Carol"}}
 	blocks := []dto.BlockDTO{
-		{From: "a", To: "b", Group: "g1"},           // in disabled group
-		{From: "a", To: "c"},                          // no group, should remain
+		{From: "a", To: "b", Group: "g1"},                 // in disabled group
+		{From: "a", To: "c"},                              // no group, should remain
 		{From: "b", To: "c", Group: "g2", Disabled: true}, // different group, also disabled directly
 	}
 	groups := []dto.BlockGroupDTO{{ID: "g1", Label: "History 2024", Disabled: true}}

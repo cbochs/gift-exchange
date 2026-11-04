@@ -204,39 +204,39 @@ func TestWouldClosePrematureCycle(t *testing.T) {
 		want      bool
 	}{
 		{
-			name:      "open chain — no cycle forms",
-			assign:    []int{-1, -1, -1, -1},
-			gifter:    0, recipient: 1, minLen: 2,
+			name:   "open chain — no cycle forms",
+			assign: []int{-1, -1, -1, -1},
+			gifter: 0, recipient: 1, minLen: 2,
 			want: false,
 		},
 		{
-			name:      "open chain partway — no cycle back to gifter",
-			assign:    []int{1, -1, -1, -1},
-			gifter:    0, recipient: 2, minLen: 2,
+			name:   "open chain partway — no cycle back to gifter",
+			assign: []int{1, -1, -1, -1},
+			gifter: 0, recipient: 2, minLen: 2,
 			want: false,
 		},
 		{
-			name:      "would close 2-cycle, minLen=2 — allow",
-			assign:    []int{1, -1, -1, -1},
-			gifter:    1, recipient: 0, minLen: 2,
+			name:   "would close 2-cycle, minLen=2 — allow",
+			assign: []int{1, -1, -1, -1},
+			gifter: 1, recipient: 0, minLen: 2,
 			want: false,
 		},
 		{
-			name:      "would close 2-cycle, minLen=3 — reject (too short)",
-			assign:    []int{1, -1, -1, -1},
-			gifter:    1, recipient: 0, minLen: 3,
+			name:   "would close 2-cycle, minLen=3 — reject (too short)",
+			assign: []int{1, -1, -1, -1},
+			gifter: 1, recipient: 0, minLen: 3,
 			want: true,
 		},
 		{
-			name:      "would close 3-cycle, minLen=3 — allow",
-			assign:    []int{1, 2, -1, -1},
-			gifter:    2, recipient: 0, minLen: 3,
+			name:   "would close 3-cycle, minLen=3 — allow",
+			assign: []int{1, 2, -1, -1},
+			gifter: 2, recipient: 0, minLen: 3,
 			want: false,
 		},
 		{
-			name:      "would close 4-cycle at final step, minLen=3 — allow",
-			assign:    []int{1, 2, 3, -1},
-			gifter:    3, recipient: 0, minLen: 3,
+			name:   "would close 4-cycle at final step, minLen=3 — allow",
+			assign: []int{1, 2, 3, -1},
+			gifter: 3, recipient: 0, minLen: 3,
 			want: false,
 		},
 		{
@@ -244,9 +244,9 @@ func TestWouldClosePrematureCycle(t *testing.T) {
 			// a too-short cycle must still be rejected.
 			// assign=[2,3,0,-1]: 0→2, 1→3, 2→0 is a 2-cycle. gifter=3, recipient=1.
 			// But here gifter=3→recipient=1: chain from 1 is assign[1]=3, next=gifter=3, length=2.
-			name:      "final assignment but cycle too short — reject",
-			assign:    []int{2, 3, 0, -1},
-			gifter:    3, recipient: 1, minLen: 3,
+			name:   "final assignment but cycle too short — reject",
+			assign: []int{2, 3, 0, -1},
+			gifter: 3, recipient: 1, minLen: 3,
 			want: true,
 		},
 	}
@@ -493,8 +493,8 @@ func TestSolve_ParticipantOrderIndependence(t *testing.T) {
 	}
 
 	canonical := solveWith([]int{0, 1, 2, 3, 4, 5})
-	reversed  := solveWith([]int{5, 4, 3, 2, 1, 0})
-	shuffled  := solveWith([]int{3, 0, 5, 1, 4, 2})
+	reversed := solveWith([]int{5, 4, 3, 2, 1, 0})
+	shuffled := solveWith([]int{3, 0, 5, 1, 4, 2})
 
 	for _, tc := range []struct {
 		name string

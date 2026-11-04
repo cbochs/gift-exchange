@@ -80,7 +80,7 @@ func (d *inputDoc) problem() ge.Problem {
 // Input reading
 // ---------------------------------------------------------------------------
 
-func readInput(path string, stdin io.Reader) (*inputDoc, error) {
+func readInput(path string, stdin io.Reader) (doc *inputDoc, retErr error) {
 	if path == "" {
 		return nil, fmt.Errorf("--input flag is required (use - for stdin)")
 	}
@@ -92,14 +92,18 @@ func readInput(path string, stdin io.Reader) (*inputDoc, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil && retErr == nil {
+				retErr = err
+			}
+		}()
 		r = f
 	}
-	var doc inputDoc
-	if err := json.NewDecoder(r).Decode(&doc); err != nil {
+	var input inputDoc
+	if err := json.NewDecoder(r).Decode(&input); err != nil {
 		return nil, fmt.Errorf("parsing input: %w", err)
 	}
-	return &doc, nil
+	return &input, nil
 }
 
 // ---------------------------------------------------------------------------
