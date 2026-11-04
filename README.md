@@ -1,19 +1,23 @@
 # Gift Exchange
 
-A tool for creating optimized gift exchange assignments. Given a list of participants and optional blocked pairings (e.g. spouses, prior-year pairs), it finds valid assignments where everyone gives and receives exactly one gift — maximizing cycle length so participants are part of larger, more interesting exchange loops rather than simple back-and-forth pairs.
+A tool for creating optimized gift exchange assignments. Given a list of
+participants and optional blocked pairings (e.g. spouses, prior-year pairs), it
+finds valid assignments where everyone gives and receives exactly one gift
+— maximizing cycle length so participants are part of larger, more interesting
+exchange loops rather than simple back-and-forth pairs.
 
 Multiple ranked solutions are returned so organizers can choose.
 
 ## Components
 
-| Component        | Location            | Description                            |
-| ---------------- | ------------------- | -------------------------------------- |
-| **Library**      | `lib/`              | Core solver — pure Go, no dependencies |
-| **CLI**          | `cmd/giftexchange/` | Command-line tool wrapping the library |
-| **Web backend**  | `server/`           | HTTP API server wrapping the library   |
-| **Web frontend** | `server/web/`       | Browser UI consuming the HTTP API      |
+| Component | Location | Description |
+| -- | -- | -- |
+| **Library** | `lib/` | Core solver — pure Go, no dependencies |
+| **CLI** | `cmd/giftexchange/` | Command-line tool wrapping the library |
+| **Web backend** | `server/` | HTTP API server wrapping the library |
+| **Web frontend** | `server/web/` | Browser UI consuming the HTTP API |
 
----
+______________________________________________________________________
 
 ## Web UI
 
@@ -26,11 +30,20 @@ go run ./cmd/server/
 > [!NOTE]
 > Pass `--static server/web/` during development to serve live files without rebuilding.
 
-The UI has two panels. The **left panel** is the form: add participants, configure blocks (directed, e.g. history) and relationships (symmetric, e.g. partners/siblings), and click **Generate**. The **right panel** shows results: a force-directed graph of valid pairings with the selected solution highlighted in color, and ranked solution tabs listing each assignment grouped by cycle.
+The UI has two panels. The **left panel** is the form: add participants,
+configure blocks (directed, e.g. history) and relationships (symmetric, e.g.
+partners/siblings), and click **Generate**. The **right panel** shows results:
+a force-directed graph of valid pairings with the selected solution highlighted
+in color, and ranked solution tabs listing each assignment grouped by cycle.
 
-Use **Add as history blocks** to carry this year's assignments forward as next year's blocks. Use **Download / Import JSON** to save and restore the full problem state — cached solutions are displayed immediately on import with no API call.
+Use **Add as history blocks** to carry this year's assignments forward as next
+year's blocks. Use **Download / Import JSON** to save and restore the full
+problem state — cached solutions are displayed immediately on import with no
+API call.
 
----
+![Web UI](https://github.com/user-attachments/assets/2e3d674b-47f7-4b69-824e-2be41fdf852e)
+
+______________________________________________________________________
 
 ## Web Backend
 
@@ -121,7 +134,7 @@ curl -s -X POST http://localhost:8080/api/v1/solve \
   }'
 ```
 
----
+______________________________________________________________________
 
 ## CLI
 
