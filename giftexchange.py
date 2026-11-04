@@ -1,12 +1,12 @@
 import argparse
+import datetime
+import json
 import random
 import sys
 import time
 from collections import deque
 from pathlib import Path
-from typing import NamedTuple, Self, Type, TypeVar
-import json
-import datetime
+from typing import NamedTuple, Self, TypeVar
 
 
 class Participant(NamedTuple):
@@ -275,7 +275,7 @@ def find_cycle(matches: set[Match], match: Match) -> list[Match] | None:
 T = TypeVar("T")
 
 
-def parse_ndjson(file_path: Path, klass: Type[T]) -> list[T]:
+def parse_ndjson(file_path: Path, klass: type[T]) -> list[T]:
     return [klass(**json.loads(line)) for line in file_path.read_text().splitlines()]
 
 
@@ -305,7 +305,7 @@ def main(args: argparse.Namespace):
 
     all_history = parse_ndjson(args.history, HistoricMatch)
     history = all_history
-    history = filter(lambda m: m.year >= (args.year - args.lookback), all_history)
+    history = filter(lambda m: m.year >= (args.year - args.lookback), history)
     history = filter(lambda m: m.year < args.year, history)
     history = map(lambda m: OrderedPair([m.gifter, m.recipient]), history)
     history = set(history)
@@ -383,13 +383,10 @@ if __name__ == "__main__":
     # Cyclic.
     parser.add_argument("-c", "--cyclic", type=int, default=None)
 
-    #
     parser.add_argument("-m", "--matches", action="append", default=[])
 
-    #
     parser.add_argument("-R", "--extra-relationships", action="append", default=[])
 
-    #
     parser.add_argument("-s", "--seed", action="store", default=int(time.time()))
 
     # TESTING
