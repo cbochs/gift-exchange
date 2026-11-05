@@ -75,7 +75,6 @@ type GiftExchangePublish {
     )
     let variants = imagePlatforms.map { platform =>
       container(platform: platform :: Platform!)
-        .from("scratch")
         .withFile(
           "/gift-exchange",
           binaries.file("gift-exchange-server-" + platform.split("/").join("-")),
