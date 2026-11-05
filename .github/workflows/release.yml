@@ -50,3 +50,4 @@ jobs:
             --tag=${{ github.ref_name }}
             --token=env://GITHUB_TOKEN
             --username=${{ github.actor }}
+            --revision=${{ github.sha }}

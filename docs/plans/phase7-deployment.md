@@ -91,9 +91,10 @@ The `platforms` module extracts the OS and architecture, maps common GNU archite
 
 ### 2.2 Release publishing
 
-The `semver` module validates SemVer 2.0.0 tags (with an optional leading `v`) and extracts version components and prerelease/build metadata. `gift-exchange-publish` rejects non-SemVer tags before publishing, then accepts the tag, GitHub token, and GHCR username to:
+The `semver` module validates SemVer 2.0.0 tags (with an optional leading `v`) and extracts version components and prerelease/build metadata. `gift-exchange-publish` rejects non-SemVer tags before publishing, then accepts the tag, GitHub token, GHCR username, and source commit SHA to:
 
 - Builds and publishes server images for the configured Linux platforms as `ghcr.io/cbochs/gift-exchange:<tag>`.
+- Adds OCI title, description, source, documentation, version, revision, and ref-name labels to the images.
 - Creates a GitHub release for the same tag and attaches the CLI binaries for the configured binary platforms.
 - Marks SemVer tags containing a prerelease suffix (for example, `-beta.1`) as prereleases; this does not affect whether the pipeline runs.
 

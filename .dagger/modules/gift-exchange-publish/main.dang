@@ -57,6 +57,10 @@ type GiftExchangePublish {
     GitHub username used to authenticate to GHCR.
     """
     username: String!,
+    """
+    Git commit SHA recorded in the image metadata.
+    """
+    revision: String!,
   ): String! {
     let releaseTag = if (semver.isValid(tag) == false) {
       raise "release tag must be SemVer-compatible: " + tag
@@ -73,8 +77,17 @@ type GiftExchangePublish {
       cliPlatforms: binaryPlatforms,
       serverPlatforms: imagePlatforms,
     )
+    let sourceURL = "https://github.com/" + self.repository
     let variants = imagePlatforms.map { platform =>
       container(platform: platform :: Platform!)
+        .withLabel("org.opencontainers.image.title", "Gift Exchange")
+        .withLabel("org.opencontainers.image.description", "Create gift exchanges where everyone participates!")
+        .withLabel("org.opencontainers.image.url", sourceURL)
+        .withLabel("org.opencontainers.image.documentation", sourceURL + "#readme")
+        .withLabel("org.opencontainers.image.source", sourceURL)
+        .withLabel("org.opencontainers.image.version", releaseTag)
+        .withLabel("org.opencontainers.image.revision", revision)
+        .withLabel("org.opencontainers.image.ref.name", releaseTag)
         .withFile(
           "/gift-exchange",
           binaries.file("gift-exchange-server-" + platforms.snakeCase(platform)),
