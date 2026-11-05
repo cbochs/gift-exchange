@@ -19,6 +19,18 @@ source = "github.com/dagger/go/staticcheck"
 [modules.staticcheck.settings]
 goVersion = "1.27.3"
 
+# Markdown formatting
+[modules.mdformat]
+source = ".dagger/modules/mdformat"
+
+[modules.mdformat.settings]
+plugins = ["mdformat-gfm", "mdformat-footnote"]
+args = ["--compact-tables"]
+
+[sdks.dang.scopes.".dagger/modules/mdformat"]
+is-module = true
+name = "mdformat"
+
 # Dagger module development SDK
 [modules.dang-sdk]
 source = "dagger.io/sdk/dang"

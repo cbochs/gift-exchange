@@ -1,0 +1,341 @@
+"""
+Check and fix Markdown files with mdformat.
+
+Projects are rooted at either an explicit .mdformat.toml configuration file or
+at a .git directory, so repositories without a dedicated mdformat config are
+still formatted. Nested project roots claim their own files and are excluded
+from parent projects.
+"""
+type Mdformat {
+  """
+  mdformat release every project is formatted with.
+  """
+  version: String!
+
+  """
+  mdformat plugins installed alongside mdformat, as pip requirements.
+  """
+  plugins: [String!]! = []
+
+  """
+  Extra CLI arguments passed to every mdformat invocation.
+  """
+  args: [String!]! = []
+
+  """
+  Project roots to format. "!" excludes.
+  """
+  format: [String!]! = ["**"]
+
+  new(
+    """
+    mdformat release, without the v prefix.
+    """
+    version: String = null,
+    """
+    mdformat plugins installed alongside mdformat, as pip requirements.
+    """
+    plugins: [String!]! = [],
+    """
+    Extra CLI arguments passed to every mdformat invocation.
+    """
+    args: [String!]! = [],
+    """
+    Project roots to format, e.g. ["**", "!docs"]. "!" excludes.
+    """
+    format: [String!]! = ["**"],
+  ) {
+    self.version = (version ?? defaultVersion).trimPrefix("v")
+    self.plugins = plugins
+    self.args = args
+    self.format = settingPatterns(format)
+    self
+  }
+
+  """
+  mdformat release used when the caller names none.
+  """
+  let defaultVersion: String! = "1.0.0"
+
+  """
+  Project root markers: an explicit config file, or a git root as a fallback.
+  """
+  let markers: [String!]! = [".mdformat.toml", ".git"]
+
+  """
+  mdformat projects at or below the working directory, keyed by root path.
+  """
+  projects(
+    ws: Workspace!,
+    include: [String!]! = [],
+    exclude: [String!]! = [],
+  ): MdformatProjects! {
+    MdformatProjects(
+      paths: projectRoots(ws, include, exclude),
+      tool: self,
+    )
+  }
+
+  """
+  The mdformat project containing a workspace path.
+  """
+  project(ws: Workspace!, path: String!, findUp: Boolean! = true): MdformatProject! {
+    let root = if (findUp) {
+      findProjectRoot(ws, path)
+    } else {
+      normalize(path)
+    }
+    mdformatProject(root)
+  }
+
+  let discoveredRoots(ws: Workspace!): [String!]! {
+    # File markers are returned as their containing directory, but directory
+    # markers are returned as the directory itself, so take the parent of .git.
+    let fileRoots = ws
+      .findRoots(markers: [".mdformat.toml"])
+      .map { root => workspaceRootPath(ws, root) }
+    let dirRoots = ws
+      .findRoots(markers: [".git"])
+      .map { root => Path(workspaceRootPath(ws, root)).parent.string }
+    (fileRoots + dirRoots)
+      .map { root => normalize(root) }
+      .uniq
+  }
+
+  let projectRoots(
+    ws: Workspace!,
+    include: [String!]!,
+    exclude: [String!]!,
+  ): [String!]! {
+    discoveredRoots(ws)
+      .filter { root => pathIncluded(ws, root, include, exclude) }
+      .filter { root => selected(root, format) }
+  }
+
+  let findProjectRoot(ws: Workspace!, path: String!): String! {
+    let found = ws.findUp(".mdformat.toml", absolute(path))
+      ?? ws.findUp(".git", absolute(path))
+    if (found == null) {
+      raise "no mdformat project found containing path: " + path
+    } else {
+      normalize(Path(found).parent.string)
+    }
+  }
+
+  let mdformatProject(path: String!): MdformatProject! {
+    MdformatProject(path: path, tool: self)
+  }
+
+  """
+  Container with mdformat and requested plugins installed.
+  """
+  let baseContainer: Container! {
+    container
+      .from("docker.io/library/python:3.15.2-alpine@sha256:2b4b04f31a4a009c1fadf7ce9338471f288488199cf43dcd1af71f244ea550aa")
+      .withoutEntrypoint
+      .withMountedCache("/root/.cache/pip", cacheVolume("mdformat-pip"))
+      .withExec(["pip", "install", "--no-cache-dir", "mdformat==" + version] + plugins)
+  }
+
+  """
+  Source directory for a project, excluding nested project roots.
+  """
+  let projectSource(ws: Workspace!, path: String!, nested: [String!]!): Directory! {
+    let root = Path(path)
+    let include = [
+      root.join("*.md").string,
+      root.join("**/*.md").string,
+      root.join("*.markdown").string,
+      root.join("**/*.markdown").string,
+      root.join(".mdformat.toml").string,
+    ]
+    let exclude = nested.map { n => Path(n).join("**").string }
+    ws.directory("/", include: include, exclude: exclude)
+  }
+
+  """
+  Nested project roots strictly below the given root.
+  """
+  let nestedRoots(root: String!, all: [String!]!): [String!]! {
+    all.filter { other => other != root and within(other, root) }
+  }
+
+  let workspaceRootPath(ws: Workspace!, cwdPath: String!): String! {
+    let joined = Path(ws.cwd).join(Path(cwdPath))
+    let parts = joined.parts
+    if (parts.length == 0) { "." } else { parts.join("/") }
+  }
+
+  let normalize(path: String!): String! {
+    let p = Path(path)
+    if (p.isRoot) { "." } else { p.string }
+  }
+
+  let absolute(path: String!): String! {
+    let p = Path(path)
+    if (p.isAbsolute) { p.string } else { Path("/").join(p).string }
+  }
+
+  let pathIncluded(
+    ws: Workspace!,
+    path: String!,
+    include: [String!]!,
+    exclude: [String!]!,
+  ): Boolean! {
+    if (include.length == 0 and exclude.length == 0) {
+      true
+    } else {
+      let includePatterns = if (include.length == 0) { ["**"] } else { include }
+      let glob = if (path == ".") { "**" } else { path.trimSuffix("/") + "/**" }
+      ws.directory("/", include: includePatterns, exclude: exclude).glob(glob).length > 0
+    }
+  }
+
+  let selected(path: String!, patterns: [String!]!): Boolean! {
+    let selecting = patterns.filter { pattern => pattern.hasPrefix("!") == false }
+    let excluding = patterns
+      .filter { pattern => pattern.hasPrefix("!") }
+      .map { pattern => pattern.trimPrefix("!") }
+    (selecting.length == 0 or selecting.any { pattern => matches(path, pattern) })
+      and excluding.any { pattern => matches(path, pattern) } == false
+  }
+
+  let matches(path: String!, pattern: String!): Boolean! {
+    let trimmed = pattern.trimPrefix("/").trimSuffix("/")
+    if (trimmed == "**" or trimmed == "*") {
+      true
+    } else {
+      let prefix = trimmed.trimSuffix("/**")
+      path == prefix or path.hasPrefix(prefix + "/")
+    }
+  }
+
+  let settingPatterns(patterns: [String!]!): [String!]! {
+    patterns.map { p =>
+      p.trimPrefix("[").trimSuffix("]").trimPrefix("\"").trimSuffix("\"")
+    }
+  }
+
+  let within(path: String!, parent: String!): Boolean! {
+    Path(parent).contains(Path(path))
+  }
+
+  """
+  mdformat --check fails on unformatted Markdown.
+  """
+  testCheckFailsOnUnformattedMarkdown: Void @check {
+    let bad = "# Hello\n\n-   item1\n-   item2\n"
+    let source = directory.withNewFile("test.md", bad)
+    let exitCode = baseContainer
+      .withDirectory("/src", source)
+      .withWorkdir("/src")
+      .withExec(["mdformat", "--check", "."], expect: ANY)
+      .exitCode
+    assert(message: "mdformat --check should fail on unformatted Markdown") {
+      exitCode != 0
+    }
+    null
+  }
+
+  """
+  mdformat fix modifies unformatted Markdown.
+  """
+  testFixChangesMarkdown: Void @check {
+    let bad = "# Hello\n\n-   item1\n-   item2\n"
+    let source = directory.withNewFile("test.md", bad)
+    let fixed = baseContainer
+      .withDirectory("/src", source)
+      .withWorkdir("/src")
+      .withExec(["mdformat", "."])
+      .directory("/src")
+    assert(message: "mdformat fix should change unformatted Markdown") {
+      fixed.file("test.md").contents != bad
+    }
+    null
+  }
+}
+
+"""
+mdformat projects in a workspace, keyed by project root.
+"""
+type MdformatProjects @collection {
+  """
+  Project root paths.
+  """
+  paths: [String!]! @keys
+
+  let tool: Mdformat!
+
+  """
+  The project rooted at path.
+  """
+  project(path: String!): MdformatProject! @get {
+    tool.mdformatProject(path)
+  }
+
+  """
+  Check all selected projects without modifying files.
+  """
+  check(ws: Workspace!): Void {
+    paths.reduce(directory) { layers, path =>
+      layers.withDirectory(path, project(path).checkExec(ws).directory(path))
+    }.sync
+    null
+  }
+
+  """
+  Fix all selected projects and return the merged directory.
+  """
+  fix(ws: Workspace!): Directory! {
+    paths.reduce(directory) { layers, path =>
+      layers.withDirectory(path, project(path).fixExec(ws).directory(path))
+    }
+  }
+}
+
+"""
+A single mdformat project.
+"""
+type MdformatProject {
+  """
+  Project root, relative to the workspace.
+  """
+  path: String!
+
+  let tool: Mdformat!
+
+  """
+  Check this project without modifying files.
+  """
+  check(ws: Workspace!): Void @check {
+    checkExec(ws).sync
+    null
+  }
+
+  """
+  Fix this project and return the changed files.
+  """
+  fix(ws: Workspace!): Directory! {
+    fixExec(ws).directory(path)
+  }
+
+  let nestedRoots(ws: Workspace!): [String!]! {
+    tool.nestedRoots(path, tool.discoveredRoots(ws))
+  }
+
+  let checkExec(ws: Workspace!): Container! {
+    exec(ws, ["--check"])
+  }
+
+  let fixExec(ws: Workspace!): Container! {
+    exec(ws, [])
+  }
+
+  let exec(ws: Workspace!, extraArgs: [String!]!): Container! {
+    tool
+      .baseContainer
+      .withDirectory("/src", tool.projectSource(ws, path, nestedRoots(ws)))
+      .withWorkdir("/src")
+      .withExec(["mdformat"] + extraArgs + tool.args + ["."])
+  }
+}
