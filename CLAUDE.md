@@ -85,6 +85,7 @@ gift-exchange/
 ├── .dagger/modules/
 │   ├── gift-exchange-build/   ← Builds CLI release binaries and server image binaries
 │   ├── gift-exchange-publish/ ← Publishes GHCR images and GitHub releases
+│   ├── platforms/             ← Parses GOOS/GOARCH and normalizes common GNU targets
 │   └── semver/                ← Validates and parses release tags
 ├── .github/workflows/
 │   ├── ci.yml                 ← Dagger checks on pull requests and main

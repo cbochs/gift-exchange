@@ -1,0 +1,86 @@
+"""
+Parse GOOS/GOARCH platform strings and normalize common GNU target names.
+"""
+type Platforms {
+  """
+  Whether a platform is a two-component lowercase GOOS/GOARCH string.
+  """
+  isValid(platform: String!): Boolean! {
+    platform.match(`^[a-z][a-z0-9]*/[a-z][a-z0-9]*$`) != null
+  }
+
+  let components(platform: String!): [String!]! {
+    if (isValid(platform) == false) {
+      raise "platform must be a GOOS/GOARCH pair: " + platform
+    }
+    platform.split("/")
+  }
+
+  """
+  Operating system component of a GOOS/GOARCH platform.
+  """
+  os(platform: String!): String! {
+    components(platform).takeFirst(1).join("")
+  }
+
+  """
+  Architecture component of a GOOS/GOARCH platform.
+  """
+  arch(platform: String!): String! {
+    components(platform).takeLast(1).join("")
+  }
+
+  """
+  GNU architecture name for the common amd64 and arm64 targets.
+  """
+  gnuArch(platform: String!): String! {
+    case (arch(platform)) {
+      "amd64" => "x86_64"
+      "arm64" => "aarch64"
+      else => raise "no GNU architecture mapping for GOARCH: " + arch(platform)
+    }
+  }
+
+  """
+  GNU target triplet for Linux and macOS platforms.
+  """
+  gnuTriplet(platform: String!): String! {
+    let targetOS = os(platform)
+    let targetArch = gnuArch(platform)
+    case (targetOS) {
+      "linux" => targetArch + "-linux-gnu"
+      "darwin" => targetArch + "-apple-darwin"
+      else => raise "no GNU target triplet mapping for GOOS: " + targetOS
+    }
+  }
+
+  """
+  Snake-cased GOOS_GOARCH form, such as linux_amd64.
+  """
+  snakeCase(platform: String!): String! {
+    os(platform) + "_" + arch(platform)
+  }
+
+  """
+  Check parsing and normalization for supported release platforms.
+  """
+  testPlatforms: Void @check {
+    if (isValid("linux/amd64") == false or isValid("darwin/arm64") == false) {
+      raise "valid GOOS/GOARCH platforms were rejected"
+    }
+    if (isValid("linux/amd64/v8") or isValid("/amd64") or isValid("darwin/")) {
+      raise "invalid GOOS/GOARCH platform was accepted"
+    }
+    if (os("linux/amd64") != "linux" or arch("linux/amd64") != "amd64") {
+      raise "platform components were parsed incorrectly"
+    }
+    if (gnuArch("linux/amd64") != "x86_64"
+      or gnuArch("linux/arm64") != "aarch64"
+      or gnuTriplet("linux/amd64") != "x86_64-linux-gnu"
+      or gnuTriplet("darwin/arm64") != "aarch64-apple-darwin"
+      or snakeCase("darwin/arm64") != "darwin_arm64") {
+      raise "platform normalization failed"
+    }
+    null
+  }
+}

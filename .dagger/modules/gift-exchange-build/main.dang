@@ -27,14 +27,14 @@ type GiftExchangeBuild {
 
     let cliArtifacts = cliPlatforms.reduce(directory) { artifacts, platform =>
       artifacts.withFile(
-        "gift-exchange-" + platform.split("/").join("-"),
+        "gift-exchange-" + platforms.snakeCase(platform),
         cli.platforms.get(key: platform).binary(ws: ws),
       )
     }
 
     serverPlatforms.reduce(cliArtifacts) { artifacts, platform =>
       artifacts.withFile(
-        "gift-exchange-server-" + platform.split("/").join("-"),
+        "gift-exchange-server-" + platforms.snakeCase(platform),
         server.platforms.get(key: platform).binary(ws: ws),
       )
     }

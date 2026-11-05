@@ -9,5 +9,9 @@ engineVersion = "v1.0.0-beta.25"
   source = "../gift-exchange-build"
 
 [[dependencies]]
+  name = "platforms"
+  source = "../platforms"
+
+[[dependencies]]
   name = "semver"
   source = "../semver"

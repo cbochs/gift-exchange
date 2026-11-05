@@ -64,7 +64,7 @@ type GiftExchangePublish {
       tag
     }
 
-    if (imagePlatforms.any { platform => platform.split("/").takeFirst(1).join("") != "linux" }) {
+    if (imagePlatforms.any { platform => platforms.isValid(platform) == false or platforms.os(platform) != "linux" }) {
       raise "imagePlatforms must contain only linux/GOARCH targets"
     }
 
@@ -77,7 +77,7 @@ type GiftExchangePublish {
       container(platform: platform :: Platform!)
         .withFile(
           "/gift-exchange",
-          binaries.file("gift-exchange-server-" + platform.split("/").join("-")),
+          binaries.file("gift-exchange-server-" + platforms.snakeCase(platform)),
           permissions: 493,
         )
         .withEntrypoint(["/gift-exchange"])
@@ -94,7 +94,7 @@ type GiftExchangePublish {
       []
     }
     let releaseAssets = binaryPlatforms.map { platform =>
-      "gift-exchange-" + platform.split("/").join("-")
+      "gift-exchange-" + platforms.snakeCase(platform)
     }
     let releaseURL = container
       .from("alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a")

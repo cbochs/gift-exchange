@@ -70,6 +70,7 @@ dagger.lock
 .dagger/modules/
 ├── gift-exchange-build/      ← Builds CLI release binaries and server image binaries
 ├── gift-exchange-publish/    ← Publishes GitHub releases and GHCR images
+├── platforms/                ← Parses and normalizes GOOS/GOARCH platform strings
 └── semver/                   ← Validates and parses release tags
 .github/workflows/
 ├── ci.yml                    ← Dagger checks on pull requests and main
@@ -85,6 +86,8 @@ The `gift-exchange-build` module calls `dagger/go` to build both `./cmd/giftexch
 - `darwin/arm64` (macOS ARM64)
 
 The CLI defaults to Linux `amd64`, Linux `arm64`, and macOS ARM64; the server defaults to Linux `amd64` and `arm64`. The publish module passes its configured binary platforms to the CLI build and image platforms to the server build.
+
+The `platforms` module extracts the OS and architecture, maps common GNU architecture names (`amd64` → `x86_64`, `arm64` → `aarch64`), returns GNU triplets for Linux and macOS, and provides snake-case names such as `linux_amd64` for artifact paths.
 
 ### 2.2 Release publishing
 

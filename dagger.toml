@@ -33,7 +33,14 @@ source = ".dagger/modules/gift-exchange-build"
 [sdks.dang.scopes.".dagger/modules/gift-exchange-build"]
 is-module = true
 name = "gift-exchange-build"
-clients = ["dagger.io/go"]
+clients = ["dagger.io/go", "./.dagger/modules/platforms"]
+
+[modules.platforms]
+source = ".dagger/modules/platforms"
+
+[sdks.dang.scopes.".dagger/modules/platforms"]
+is-module = true
+name = "platforms"
 
 [modules.semver]
 source = ".dagger/modules/semver"
@@ -48,7 +55,7 @@ source = ".dagger/modules/gift-exchange-publish"
 [sdks.dang.scopes.".dagger/modules/gift-exchange-publish"]
 is-module = true
 name = "gift-exchange-publish"
-clients = ["./.dagger/modules/gift-exchange-build", "./.dagger/modules/semver"]
+clients = ["./.dagger/modules/gift-exchange-build", "./.dagger/modules/semver", "./.dagger/modules/platforms"]
 
 # Settings used by the release workflow with `dagger --env ci`.
 [env.ci.modules.gift-exchange-publish.settings]
