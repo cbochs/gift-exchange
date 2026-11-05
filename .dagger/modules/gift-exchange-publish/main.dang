@@ -88,18 +88,18 @@ type GiftExchangePublish {
           permissions: 493,
         )
         .withEntrypoint(["/gift-exchange"])
+        .withAnnotation("org.opencontainers.image.title", "Gift Exchange")
+        .withAnnotation("org.opencontainers.image.description", "A small tool and simple web UI for creating the perfect gift exchange.")
+        .withAnnotation("org.opencontainers.image.url", sourceURL)
+        .withAnnotation("org.opencontainers.image.documentation", sourceURL + "#readme")
+        .withAnnotation("org.opencontainers.image.source", sourceURL)
+        .withAnnotation("org.opencontainers.image.version", releaseTag)
+        .withAnnotation("org.opencontainers.image.revision", revision)
+        .withAnnotation("org.opencontainers.image.created", created)
     }
 
     let imageRef = self.registry + "/" + self.repository + ":" + releaseTag
     let publishedImage = container
-      .withAnnotation("org.opencontainers.image.title", "Gift Exchange")
-      .withAnnotation("org.opencontainers.image.description", "A small tool and simple web UI for creating the perfect gift exchange.")
-      .withAnnotation("org.opencontainers.image.url", sourceURL)
-      .withAnnotation("org.opencontainers.image.documentation", sourceURL + "#readme")
-      .withAnnotation("org.opencontainers.image.source", sourceURL)
-      .withAnnotation("org.opencontainers.image.version", releaseTag)
-      .withAnnotation("org.opencontainers.image.revision", revision)
-      .withAnnotation("org.opencontainers.image.created", created)
       .withRegistryAuth(self.registry, username, token)
       .publish(imageRef, platformVariants: variants)
 
