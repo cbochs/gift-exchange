@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   checks:
-    runs-on: k3s-dagger
+    runs-on: k3s-gift-exchange-dagger
     env:
       DAGGER_X_RELEASE: v1.0.0-beta.25
     steps:
