@@ -13,7 +13,7 @@
 
 Expose the `lib/` package through a command-line interface. The CLI serves two purposes: (1) provide a practical, scriptable tool for generating gift exchanges, and (2) act as the first integration test of the library's public API, surfacing any ergonomic or design issues before the web backend is built.
 
----
+______________________________________________________________________
 
 ## 1. High-Level Design
 
@@ -104,12 +104,12 @@ giftexchange analyze
 
 ### 1.5 Exit Codes
 
-| Code | Meaning                                         |
-| ---- | ----------------------------------------------- |
-| 0    | Success                                         |
-| 1    | Invalid input (parse error, validation failure) |
-| 2    | No solution found (infeasible)                  |
-| 3    | Timeout expired before first solution found     |
+| Code | Meaning |
+| -- | -- |
+| 0 | Success |
+| 1 | Invalid input (parse error, validation failure) |
+| 2 | No solution found (infeasible) |
+| 3 | Timeout expired before first solution found |
 
 ### 1.6 JSON Import/Export Round-Trip
 
@@ -140,19 +140,19 @@ CLI tests are integration tests that invoke the `main` function or the top-level
 - `TestCLI_Stdin`: pipe JSON via stdin → same output as file input
 - `TestCLI_SeedOverride`: `--seed` flag overrides input seed, result is reproducible
 
----
+______________________________________________________________________
 
 ## 2. Implementation Plan
 
 1. **Create `cmd/giftexchange/main.go`** with a `run(args []string) int` function returning exit code — allows testing without `os.Exit`
-2. **Implement `solve` subcommand**: parse input → call `giftexchange.Solve` → format output
-3. **Implement `validate` subcommand**: parse input → call library validation → report
-4. **Implement `analyze` subcommand**: parse input → call `buildGraph` → report statistics
-5. **Write CLI integration tests** in `cmd/giftexchange/main_test.go`
-6. **Address any library API friction** discovered during CLI implementation (API changes go back to the library, not workarounds in the CLI)
-7. **Verify round-trip**: JSON output can be re-used as input without changes
+1. **Implement `solve` subcommand**: parse input → call `giftexchange.Solve` → format output
+1. **Implement `validate` subcommand**: parse input → call library validation → report
+1. **Implement `analyze` subcommand**: parse input → call `buildGraph` → report statistics
+1. **Write CLI integration tests** in `cmd/giftexchange/main_test.go`
+1. **Address any library API friction** discovered during CLI implementation (API changes go back to the library, not workarounds in the CLI)
+1. **Verify round-trip**: JSON output can be re-used as input without changes
 
----
+______________________________________________________________________
 
 ## 3. Implementation Snippets
 

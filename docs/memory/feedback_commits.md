@@ -1,8 +1,6 @@
----
-name: Commit style preference
-description: User wants frequent commits with conventional commit format and an explanatory body
-type: feedback
----
+______________________________________________________________________
+
+## name: Commit style preference description: User wants frequent commits with conventional commit format and an explanatory body type: feedback
 
 Commit early and often. Each logical unit of work (new file, passing test suite, bug fix) warrants its own commit.
 

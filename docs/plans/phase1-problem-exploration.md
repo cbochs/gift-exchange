@@ -19,7 +19,7 @@
 
 Formalize the gift exchange problem as a graph theory problem. Identify which algorithms apply, analyze their complexity for realistic input sizes, and define the objective function the solver will optimize. Validate assumptions experimentally before committing to an implementation strategy.
 
----
+______________________________________________________________________
 
 ## 1. High-Level Design
 
@@ -70,7 +70,7 @@ Finding a Hamiltonian cycle in a general directed graph is NP-complete. However:
 - The valid-pairing graph is typically **dense** (most pairings are allowed — blocks are sparse)
 - On dense graphs, backtracking DFS finds Hamiltonian cycles very quickly with no meaningful search tree explosion
 
----
+______________________________________________________________________
 
 ## 2. Experimental Findings
 
@@ -97,18 +97,18 @@ The direct Hamiltonian DFS finds the solution immediately.
 
 **Results** (1000 runs, seed=42):
 
-| Graph                           | Out-degree | Global distinct | Per-node distinct | Collision rate |
-| ------------------------------- | ---------- | --------------- | ----------------- | -------------- |
-| Dense (n=8, all pairs valid)    | 7          | 891             | **904**           | 10–11%         |
-| Moderate (n=8, ~4 valid each)   | 4          | 108             | **117**           | 88–89%         |
-| Very sparse (n=6, 2 valid each) | 2          | 3               | 3                 | 97–100%        |
+| Graph | Out-degree | Global distinct | Per-node distinct | Collision rate |
+| -- | -- | -- | -- | -- |
+| Dense (n=8, all pairs valid) | 7 | 891 | **904** | 10–11% |
+| Moderate (n=8, ~4 valid each) | 4 | 108 | **117** | 88–89% |
+| Very sparse (n=6, 2 valid each) | 2 | 3 | 3 | 97–100% |
 
 Key observations:
 
 1. **Per-node shuffle is marginally better** (904 vs 891 distinct on dense, 117 vs 108 on moderate). The difference is real but small — the global-order correlation creates mild bias.
-2. **Merge had zero effect in all cases.** The backtracker with cycle-length pruning already finds Hamiltonian cycles on dense graphs. The merge step adds overhead with no benefit. This was surprising and changes the design.
-3. **Very sparse graphs have non-uniform sampling.** With only 3 valid solutions, the global shuffle sampled them at (502, 277, 221) frequency — far from the ideal (333, 333, 333). Per-node was (514, 247, 239) — marginally better but still skewed. For near-exhaustible solution spaces, systematic enumeration is needed.
-4. **Collision rate is a reliable exhaustion signal.** The adaptive strategy (stop after 5 consecutive collisions) found 1831/56/3 distinct solutions on dense/moderate/sparse graphs respectively, all with minimal wasted attempts.
+1. **Merge had zero effect in all cases.** The backtracker with cycle-length pruning already finds Hamiltonian cycles on dense graphs. The merge step adds overhead with no benefit. This was surprising and changes the design.
+1. **Very sparse graphs have non-uniform sampling.** With only 3 valid solutions, the global shuffle sampled them at (502, 277, 221) frequency — far from the ideal (333, 333, 333). Per-node was (514, 247, 239) — marginally better but still skewed. For near-exhaustible solution spaces, systematic enumeration is needed.
+1. **Collision rate is a reliable exhaustion signal.** The adaptive strategy (stop after 5 consecutive collisions) found 1831/56/3 distinct solutions on dense/moderate/sparse graphs respectively, all with minimal wasted attempts.
 
 ### 2.3 Core Insight: Merge Is Redundant in the Common Case
 
@@ -122,7 +122,7 @@ This occurs because:
 
 Merge is only needed for sparse graphs where the backtracker exhausts some branches and settles for a multi-cycle solution. But merge is incomplete on exactly those graphs (as shown in 2.1). This makes merge a poor fit as a correctness mechanism.
 
----
+______________________________________________________________________
 
 ## 3. Revised Algorithm Recommendation
 
@@ -242,48 +242,48 @@ Solve(problem, options):
 - Moderate graph: found 56 distinct solutions (82 attempts)
 - Very sparse graph: found all 3 solutions (8 attempts)
 
----
+______________________________________________________________________
 
 ## 4. Complexity Analysis
 
 For n ≤ 30 (typical gift exchange):
 
-| Operation                 | Complexity       | Practical timing (est.) |
-| ------------------------- | ---------------- | ----------------------- |
-| Build valid-pairing graph | O(n²)            | < 1ms                   |
-| Hamiltonian DFS (dense)   | O(n) amortized   | < 1ms per call          |
-| Hamiltonian DFS (sparse)  | O(n!) worst case | < 100ms for n=30        |
-| Constrained backtrack     | O(n!) worst case | same                    |
-| Canonicalize              | O(n log n)       | negligible              |
-| Full solve (k solutions)  | O(k · n) typical | < 10ms                  |
+| Operation | Complexity | Practical timing (est.) |
+| -- | -- | -- |
+| Build valid-pairing graph | O(n²) | < 1ms |
+| Hamiltonian DFS (dense) | O(n) amortized | < 1ms per call |
+| Hamiltonian DFS (sparse) | O(n!) worst case | < 100ms for n=30 |
+| Constrained backtrack | O(n!) worst case | same |
+| Canonicalize | O(n log n) | negligible |
+| Full solve (k solutions) | O(k · n) typical | < 10ms |
 
 Worst-case behavior only manifests on pathologically sparse graphs. For all known real gift exchange instances (the existing participant/relationship data), the dense-graph fast path applies.
 
----
+______________________________________________________________________
 
 ## 5. Implementation Plan
 
 Phase 1 produces no production code. Its deliverables are:
 
 1. **This document** (finalized after experiments)
-2. **`experiments/merge_completeness/`**: confirms merge is incomplete — done
-3. **`experiments/shuffle_diversity/`**: confirms per-node shuffle is marginally better, validates adaptive stopping — done
-4. **Open design questions answered** (see below)
+1. **`experiments/merge_completeness/`**: confirms merge is incomplete — done
+1. **`experiments/shuffle_diversity/`**: confirms per-node shuffle is marginally better, validates adaptive stopping — done
+1. **Open design questions answered** (see below)
 
 ### Resolved Design Questions
 
-| Question                                | Decision                                                                                                                                                                   |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Primary algorithm                       | Hamiltonian DFS (not backtrack + merge)                                                                                                                                    |
-| Merge step                              | Optional safety net on fallback path only, not primary                                                                                                                     |
-| Shuffle strategy                        | Per-node (each gifter shuffles its own adjacency list)                                                                                                                     |
-| Multiple solutions                      | Random restarts with canonicalized deduplication                                                                                                                           |
-| Sparse graph fallback                   | Constrained backtracking + collision-rate adaptive stop                                                                                                                    |
-| Systematic enumeration                  | Triggered when ≥5 consecutive collisions                                                                                                                                   |
-| MinCycleLen as user parameter           | **Removed.** Solver uses automatic N/M progression: try N, N/2, N/3, ... until a solution is found or the target drops to 1 (infeasible). No user-facing parameter needed. |
-| Score ranking for mixed-quality results | **Always rank by Score.** Hamiltonian cycles naturally float to the top (Score.MinCycleLen = n). The UI presents solutions ranked best-first without special-casing.       |
+| Question | Decision |
+| -- | -- |
+| Primary algorithm | Hamiltonian DFS (not backtrack + merge) |
+| Merge step | Optional safety net on fallback path only, not primary |
+| Shuffle strategy | Per-node (each gifter shuffles its own adjacency list) |
+| Multiple solutions | Random restarts with canonicalized deduplication |
+| Sparse graph fallback | Constrained backtracking + collision-rate adaptive stop |
+| Systematic enumeration | Triggered when ≥5 consecutive collisions |
+| MinCycleLen as user parameter | **Removed.** Solver uses automatic N/M progression: try N, N/2, N/3, ... until a solution is found or the target drops to 1 (infeasible). No user-facing parameter needed. |
+| Score ranking for mixed-quality results | **Always rank by Score.** Hamiltonian cycles naturally float to the top (Score.MinCycleLen = n). The UI presents solutions ranked best-first without special-casing. |
 
----
+______________________________________________________________________
 
 ## 6. Key Snippets
 
@@ -422,18 +422,18 @@ func scoreOf(assign []int) Score {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
 The gift exchange problem is a **directed cycle cover optimization** problem on a typically dense graph. Empirical experiments revised the planned algorithm:
 
-| Aspect             | Originally planned         | Revised after experiments               |
-| ------------------ | -------------------------- | --------------------------------------- |
-| Primary algorithm  | Backtracking + cycle-merge | **Hamiltonian DFS**                     |
-| Merge step         | Core optimization          | Safety net only (incomplete)            |
-| Shuffle            | Global order               | **Per-node** (marginally better)        |
-| Multiple solutions | Random restarts            | Random restarts + collision-rate cutoff |
-| Fallback           | Bipartite matching         | Constrained backtracking                |
+| Aspect | Originally planned | Revised after experiments |
+| -- | -- | -- |
+| Primary algorithm | Backtracking + cycle-merge | **Hamiltonian DFS** |
+| Merge step | Core optimization | Safety net only (incomplete) |
+| Shuffle | Global order | **Per-node** (marginally better) |
+| Multiple solutions | Random restarts | Random restarts + collision-rate cutoff |
+| Fallback | Bipartite matching | Constrained backtracking |
 
 The Hamiltonian DFS approach is simpler, more direct, and avoids the incompleteness problem of greedy 2-opt merge entirely. On dense graphs (the typical case), it finds Hamiltonian cycles with negligible search effort.

@@ -11,7 +11,7 @@
 All changes are frontend-only (`server/web/`). No Go changes, no API changes,
 no behavior changes except those explicitly described below.
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -30,7 +30,7 @@ so the recipient sees the result immediately without re-solving.
 F1 and F2 are independent and can be implemented in any order. F4 depends
 on F3; F5 requires F3 and F4.
 
----
+______________________________________________________________________
 
 ## F1 — Deselect Solution by Clicking the Active Tab
 
@@ -43,16 +43,16 @@ After this change it may also be `null`, meaning no solution is selected.
 
 Audit of all call sites that read `state.selectedSolution`:
 
-| Site                                      | Behaviour with `null`                              | Action needed                      |
-| ----------------------------------------- | -------------------------------------------------- | ---------------------------------- |
-| `state.solutions[state.selectedSolution]` | `undefined` (same as empty array)                  | None — all consumers already guard |
-| `buildSolutionEdges(undefined)`           | Returns `[]` — already guarded                     | None                               |
-| `buildNodeColors(undefined)`              | Returns `{}` — already guarded                     | None                               |
-| `onAddAsHistoryBlocks`                    | `if (!sol) return;` already present                | None                               |
-| `onDownload`                              | `_selected_solution: null` is valid JSON           | None                               |
-| `renderSolutionsPanel`                    | Crashes: `sol.score` on undefined                  | Fix — see below                    |
-| `recolorGraph`                            | Calls `buildSolutionEdges(undefined)` → `[]`       | None                               |
-| `encodeStateToHash` (after F3)            | `state.solutions[null]` → undefined → no `c` field | None                               |
+| Site | Behaviour with `null` | Action needed |
+| -- | -- | -- |
+| `state.solutions[state.selectedSolution]` | `undefined` (same as empty array) | None — all consumers already guard |
+| `buildSolutionEdges(undefined)` | Returns `[]` — already guarded | None |
+| `buildNodeColors(undefined)` | Returns `{}` — already guarded | None |
+| `onAddAsHistoryBlocks` | `if (!sol) return;` already present | None |
+| `onDownload` | `_selected_solution: null` is valid JSON | None |
+| `renderSolutionsPanel` | Crashes: `sol.score` on undefined | Fix — see below |
+| `recolorGraph` | Calls `buildSolutionEdges(undefined)` → `[]` | None |
+| `encodeStateToHash` (after F3) | `state.solutions[null]` → undefined → no `c` field | None |
 
 ### `renderSolutionsPanel` fix
 
@@ -63,10 +63,10 @@ Restructure the function into three phases:
 
 1. **No solutions** (`!state.solutions.length`): clear tabs, clear detail,
    hide both action buttons, return early. _(existing behaviour)_
-2. **Solutions exist, none selected** (`selectedSolution === null`): render
+1. **Solutions exist, none selected** (`selectedSolution === null`): render
    tabs (none marked `.active`), clear detail, hide both action buttons,
    return early. _(new)_
-3. **Solution selected**: render tabs, render detail, show action buttons.
+1. **Solution selected**: render tabs, render detail, show action buttons.
    _(existing behaviour, now the last branch)_
 
 ```
@@ -118,7 +118,7 @@ function mutated() {
 `onGenerate` (and `onImport`) explicitly set `state.selectedSolution = 0`
 after a successful solve. No change needed there.
 
----
+______________________________________________________________________
 
 ## F2 — Toggle Valid/Background Edges
 
@@ -201,7 +201,7 @@ current visibility state so the toggle is respected across re-renders:
 validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 ```
 
----
+______________________________________________________________________
 
 ## F3 — Hash v3 Encoder
 
@@ -211,10 +211,10 @@ validEdgeLayer.style("display", state.showValidEdges ? "" : "none");
 
 Extends v2 with two new optional top-level fields:
 
-| Field  | Type         | Included when     | Meaning                              |
-| ------ | ------------ | ----------------- | ------------------------------------ |
-| `pres` | `true`       | Always in v3      | Recipient loads in presentation mode |
-| `c`    | `number[][]` | Solution selected | Cycles as participant-index arrays   |
+| Field | Type | Included when | Meaning |
+| -- | -- | -- | -- |
+| `pres` | `true` | Always in v3 | Recipient loads in presentation mode |
+| `c` | `number[][]` | Solution selected | Cycles as participant-index arrays |
 
 The `c` field encodes `sol.cycles` using the same participant-index mapping
 already computed in `encodeStateToHash` (`idxOf`). A 20-person Hamiltonian
@@ -269,7 +269,7 @@ export function encodeStateToHash(state) {
 }
 ```
 
----
+______________________________________________________________________
 
 ## F4 — Hash v3 Decoder
 
@@ -331,7 +331,7 @@ guards (`Array.isArray`, index bounds check, `.filter(Boolean)`). A bad `c`
 results in no solution loaded (recipient sees "click Generate to solve"),
 not a crash.
 
----
+______________________________________________________________________
 
 ## F5 — Presentation Mode on Load
 
@@ -424,17 +424,17 @@ if (hashState?._presentation) {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Files to Change
 
-| File                    | Changes                                                                                                                                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/web/app.js`     | F1: tab toggle + null selectedSolution + renderSolutionsPanel fix + mutated; F2: state + wire; F3: encodeStateToHash; F4: decodeStateFromHash + decodeV3 + parseV2Fields; F5: DOMContentLoaded + showHashBanner |
-| `server/web/index.html` | F2: overlay button; F5: banner message span                                                                                                                                                                     |
-| `server/web/style.css`  | F2: `.graph-overlay-btn` rule                                                                                                                                                                                   |
+| File | Changes |
+| -- | -- |
+| `server/web/app.js` | F1: tab toggle + null selectedSolution + renderSolutionsPanel fix + mutated; F2: state + wire; F3: encodeStateToHash; F4: decodeStateFromHash + decodeV3 + parseV2Fields; F5: DOMContentLoaded + showHashBanner |
+| `server/web/index.html` | F2: overlay button; F5: banner message span |
+| `server/web/style.css` | F2: `.graph-overlay-btn` rule |
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 

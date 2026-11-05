@@ -4,7 +4,7 @@
 
 > Complete.
 
----
+______________________________________________________________________
 
 ## Motivation
 
@@ -23,7 +23,7 @@ Two distinct failure modes are useful to distinguish:
 This phase adds both categories to `GraphInfo`, removes the now-redundant
 global `HamiltonianPossible` field, and fixes the analyze output ordering.
 
----
+______________________________________________________________________
 
 ## Definitions
 
@@ -46,7 +46,7 @@ for n ≤ 20.
 Edges that are solution-dead are implicitly also Hamiltonian-dead. The
 Hamiltonian-dead check only runs for edges that are NOT solution-dead.
 
----
+______________________________________________________________________
 
 ## Removing `HamiltonianPossible`
 
@@ -60,7 +60,7 @@ which the existing `solve` command answers directly).
 `HamiltonianPossible` is removed from `GraphInfo`. The Hamiltonian DFS is
 removed from `Analyze`.
 
----
+______________________________________________________________________
 
 ## Behavior when Hall violations exist
 
@@ -72,7 +72,7 @@ but uninformative.
 Dead edge analysis is **skipped when Hall violations exist**. The CLI notes this
 in the output: `Dead edges: skipped (Hall condition violated)`.
 
----
+______________________________________________________________________
 
 ## Changes
 
@@ -173,19 +173,19 @@ Dead edges:
   Bob   cannot gift to (no solution):        Carol
 ```
 
----
+______________________________________________________________________
 
 ## Files to change
 
-| File                            | Changes                                                                                               |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `lib/types.go`                  | Remove `HamiltonianPossible`; add `DeadEdge`, `SolutionDeadEdges`, `HamiltonianDeadEdges`             |
-| `lib/analyze.go`                | Remove Hamiltonian DFS; add `canCompleteMatching`, `hamiltonianPathExists`; populate dead edge fields |
-| `lib/solver_test.go`            | Remove `HamiltonianPossible` test refs; add dead edge tests                                           |
-| `cmd/giftexchange/main.go`      | Reorder output; remove Hamiltonian line; add dead edge section                                        |
-| `cmd/giftexchange/main_test.go` | Update `TestCLI_Analyze` for new output                                                               |
+| File | Changes |
+| -- | -- |
+| `lib/types.go` | Remove `HamiltonianPossible`; add `DeadEdge`, `SolutionDeadEdges`, `HamiltonianDeadEdges` |
+| `lib/analyze.go` | Remove Hamiltonian DFS; add `canCompleteMatching`, `hamiltonianPathExists`; populate dead edge fields |
+| `lib/solver_test.go` | Remove `HamiltonianPossible` test refs; add dead edge tests |
+| `cmd/giftexchange/main.go` | Reorder output; remove Hamiltonian line; add dead edge section |
+| `cmd/giftexchange/main_test.go` | Update `TestCLI_Analyze` for new output |
 
----
+______________________________________________________________________
 
 ## Acceptance criteria
 

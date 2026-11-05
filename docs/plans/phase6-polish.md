@@ -12,7 +12,7 @@
 
 Five targeted improvements: two bug fixes to existing behavior, two new input features, and a mobile-friendly layout. All changes are frontend-only.
 
----
+______________________________________________________________________
 
 ## 1. Bug Fix: Solution Display
 
@@ -99,7 +99,7 @@ Use `nameOf[id] ?? id` when rendering each assignment (fallback to ID if a name 
 }
 ```
 
----
+______________________________________________________________________
 
 ## 2. Bug Fix: Collapsible Sidebar Sections
 
@@ -152,7 +152,7 @@ details.sidebar-section:not([open]) > summary::after {
 
 **Sections affected:** Participants, Relationships (new in Feature 3), Blocks, Options. The Generate row stays as-is (not a collapsible section).
 
----
+______________________________________________________________________
 
 ## 3. Feature: Symmetric Relationships
 
@@ -220,7 +220,7 @@ state.relationships = state.relationships.filter(
 
 `applyImport()` reads `doc.relationships ?? []`. Pre-Phase-6 imports default to empty — backward compatible.
 
----
+______________________________________________________________________
 
 ## 4. Feature: "Add as History Blocks"
 
@@ -258,7 +258,7 @@ function onAddAsHistoryBlocks() {
 
 **Export.** Added blocks land in `state.blocks` → automatically included in JSON export. No special handling.
 
----
+______________________________________________________________________
 
 ## 5. Feature: Mobile Layout
 
@@ -350,14 +350,14 @@ Body scrolls vertically. The viewport-height constraint (`height: 100vh; overflo
 
 The header fits at 375px: "Gift Exchange" title + Import JSON button on one line. No changes required.
 
----
+______________________________________________________________________
 
 ## 6. Implementation Plan
 
 1. **Bug Fix: Solution display** — update `renderSolutionsPanel()` in `app.js`; update CSS in `style.css`. Remove `.cycle-line`; add `.cycle-group`, `.cycle-header`, `.cycle-dot`, `.assignment-line`.
-2. **Bug Fix: Collapsible sections** — replace `<section>` with `<details open>` in `index.html`; update CSS.
-3. **Feature: Relationships** — add `relationships: []` to state; add `effectiveBlocks()` helper; update `restartGraph()` and `stateToRequest()`; add `renderRelationshipList()` + `renderRelationshipDropdowns()`; update cascade delete; update `applyImport()` and `onDownload()`; add HTML section and CSS.
-4. **Feature: Add as history blocks** — add button to solutions panel HTML; implement `onAddAsHistoryBlocks()` handler in `app.js`.
-5. **Feature: Mobile layout** — add `@media (max-width: 640px)` block to `style.css`; verify on real device or browser devtools.
+1. **Bug Fix: Collapsible sections** — replace `<section>` with `<details open>` in `index.html`; update CSS.
+1. **Feature: Relationships** — add `relationships: []` to state; add `effectiveBlocks()` helper; update `restartGraph()` and `stateToRequest()`; add `renderRelationshipList()` + `renderRelationshipDropdowns()`; update cascade delete; update `applyImport()` and `onDownload()`; add HTML section and CSS.
+1. **Feature: Add as history blocks** — add button to solutions panel HTML; implement `onAddAsHistoryBlocks()` handler in `app.js`.
+1. **Feature: Mobile layout** — add `@media (max-width: 640px)` block to `style.css`; verify on real device or browser devtools.
 
 Each step is independently testable and committable.

@@ -4,7 +4,7 @@
 
 > Complete.
 
----
+______________________________________________________________________
 
 ## Motivation
 
@@ -13,9 +13,9 @@ Go layer:
 
 1. **Relationship expansion** — symmetric relationships are expanded into two
    directed blocks in `effectiveBlocks()` before the API call.
-2. **Block group filtering** — block groups are a UI concept; their members are
+1. **Block group filtering** — block groups are a UI concept; their members are
    flattened before the API call.
-3. **Enable/disable filtering** — disabled participants, blocks, relationships,
+1. **Enable/disable filtering** — disabled participants, blocks, relationships,
    and groups are filtered out in `effectiveBlocks()` / `stateToRequest()`.
 
 Moving this logic into `internal/dto`:
@@ -29,7 +29,7 @@ Moving this logic into `internal/dto`:
 The lib (`lib/`) is **not changed** — it still receives a flat list of participants
 and blocks. The solver knows nothing about relationships, groups, or disabled state.
 
----
+______________________________________________________________________
 
 ## Design
 
@@ -127,7 +127,7 @@ func BuildProblem(
 The existing `ParticipantsToLib`, `BlocksToLib`, and their singular forms remain
 unchanged — they are still used by `SolutionsFromLib` and tests.
 
----
+______________________________________________________________________
 
 ## Changes by file
 
@@ -259,26 +259,26 @@ The logic that was in `effectiveBlocks` + `activeParticipants` stays in the
 frontend, but only for the graph — it is not used for the API call anymore.
 The comment above `buildValidEdges` is updated to make this clear.
 
----
+______________________________________________________________________
 
 ## Design Questions (resolved)
 
 1. **Breaking API change?** No. New fields are optional; old clients that omit
    `relationships`, `block_groups`, and `disabled` fields continue to work.
 
-2. **Where do new types live?** `internal/dto` — shared between CLI and server.
+1. **Where do new types live?** `internal/dto` — shared between CLI and server.
    No domain types are defined in `server/api.go`.
 
-3. **`BlockGroupDTO.collapsed`?** Absent. `collapsed` is frontend-only UI state;
+1. **`BlockGroupDTO.collapsed`?** Absent. `collapsed` is frontend-only UI state;
    the server and CLI have no use for it.
 
-4. **Relationship deduplication on server?** Skipped. Duplicate blocks are safe
+1. **Relationship deduplication on server?** Skipped. Duplicate blocks are safe
    for `lib.Solve` (a blocked edge stays blocked). The frontend already prevents
    duplicate relationships at entry time.
 
-5. **Response shape change?** No. `SolveResponse` is unchanged.
+1. **Response shape change?** No. `SolveResponse` is unchanged.
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 

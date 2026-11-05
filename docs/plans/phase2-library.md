@@ -19,7 +19,7 @@
 
 Implement the `lib/` package: a standalone, dependency-free Go library that takes a problem description (participants + blocks + options) and returns one or more ranked gift exchange solutions. This library is the only place algorithm logic lives.
 
----
+______________________________________________________________________
 
 ## 1. High-Level Design
 
@@ -127,7 +127,7 @@ type graph struct {
 A directed edge `i → j` exists if:
 
 1. `i != j` (no self-gifting)
-2. `Block{From: ids[i], To: ids[j]}` is not in the block set
+1. `Block{From: ids[i], To: ids[j]}` is not in the block set
 
 ### 1.6 Solver Algorithm
 
@@ -143,13 +143,13 @@ The solver tries a decreasing sequence of minimum cycle length targets — N, N/
 
 The sequence of unique targets for various N:
 
-| N   | Targets tried (until infeasible at 1) |
-| --- | ------------------------------------- |
-| 4   | 4, 2                                  |
-| 6   | 6, 3, 2                               |
-| 8   | 8, 4, 2                               |
-| 12  | 12, 6, 4, 3, 2                        |
-| 20  | 20, 10, 6, 5, 4, 3, 2                 |
+| N | Targets tried (until infeasible at 1) |
+| -- | -- |
+| 4 | 4, 2 |
+| 6 | 6, 3, 2 |
+| 8 | 8, 4, 2 |
+| 12 | 12, 6, 4, 3, 2 |
+| 20 | 20, 10, 6, 5, 4, 3, 2 |
 
 Since minCycleLen=N is the Hamiltonian case (the highest achievable score), the solver always tries the optimal objective first and only relaxes when forced to by the constraint graph.
 
@@ -158,27 +158,27 @@ Since minCycleLen=N is the Hamiltonian case (the highest achievable score), the 
 Search directly for a Hamiltonian cycle. Fix node 0 as the start (cycle rotation-invariance means this doesn't miss solutions). Depth-first search with per-node shuffled adjacency lists:
 
 1. Maintain `path` and `visited`
-2. At each step, try each unvisited neighbor of `path[last]` (in shuffled order)
-3. When `len(path) == n`: check if an edge back to node 0 exists; if yes, record the solution
-4. If DFS exhausts the search space: no Hamiltonian cycle exists — try M=2
+1. At each step, try each unvisited neighbor of `path[last]` (in shuffled order)
+1. When `len(path) == n`: check if an edge back to node 0 exists; if yes, record the solution
+1. If DFS exhausts the search space: no Hamiltonian cycle exists — try M=2
 
 **Algorithm B — Constrained Backtracking (M>1, minCycleLen=N/M):**
 
 For each target `minCycleLen = N/M`:
 
 1. Assign gifters to recipients one at a time (fixed gifter order, per-node shuffled adjacency lists)
-2. For each candidate `gifter → recipient`, apply `wouldClosePrematureCycle`: follow the partial assignment chain from `recipient`; if it loops back to `gifter` before all n participants are assigned AND the would-be cycle length < minCycleLen, reject
-3. Recurse; backtrack if no valid recipient found
-4. If backtracking succeeds, the result is a valid cycle cover — record it
+1. For each candidate `gifter → recipient`, apply `wouldClosePrematureCycle`: follow the partial assignment chain from `recipient`; if it loops back to `gifter` before all n participants are assigned AND the would-be cycle length < minCycleLen, reject
+1. Recurse; backtrack if no valid recipient found
+1. If backtracking succeeds, the result is a valid cycle cover — record it
 
 **Solution enumeration (both algorithms):**
 
 Once a valid target `minCycleLen` is found, collect up to `MaxSolutions` distinct solutions at that level:
 
 1. Run the solver with a seeded RNG; canonicalize and record the result
-2. Re-seed and run again; if the result is distinct (new canonical form), add to results
-3. Track consecutive collisions; if ≥ 5 consecutive duplicates, the solution space is near-exhausted — stop early
-4. Return results ranked by `Score` (best-first)
+1. Re-seed and run again; if the result is distinct (new canonical form), add to results
+1. Track consecutive collisions; if ≥ 5 consecutive duplicates, the solution space is near-exhausted — stop early
+1. Return results ranked by `Score` (best-first)
 
 All returned solutions use the same `minCycleLen` constraint, but their actual Scores may differ (some might have longer minimum cycles by chance). Ranking by Score naturally surfaces the best ones first.
 
@@ -214,20 +214,20 @@ For random problem instances, verify all returned solutions satisfy:
 - Score computed from assignments exactly matches `solution.Score`
 - All solutions in one response have the same Score.MinCycleLen (they were found at the same progression level)
 
----
+______________________________________________________________________
 
 ## 2. Implementation Plan
 
 1. **Initialize Go module**: `go mod init github.com/[user]/gift-exchange` in the repo root
-2. **Write `lib/types.go`**: all public types and `Solve` signature (stub)
-3. **Write `lib/score.go`**: `decomposeCycles`, `canonicalize`, `scoreOf`, `Score.Better`
-4. **Write `lib/graph.go`**: `buildGraph`, `graph.isEdge`, `shuffled`
-5. **Write `lib/solver_test.go`**: write all tests first (they will fail)
-6. **Write `lib/solver.go`**: `validate`, `hamiltonianDFS`, `wouldClosePrematureCycle`, `constrainedBacktrack`, `Solve` — iterate until all tests pass
-7. **Run `go vet` and `staticcheck`** — zero warnings required before Phase 3
-8. **Verify with the Phase 1 counterexample graph** — `TestSolve_MergeCounterexample` must pass
+1. **Write `lib/types.go`**: all public types and `Solve` signature (stub)
+1. **Write `lib/score.go`**: `decomposeCycles`, `canonicalize`, `scoreOf`, `Score.Better`
+1. **Write `lib/graph.go`**: `buildGraph`, `graph.isEdge`, `shuffled`
+1. **Write `lib/solver_test.go`**: write all tests first (they will fail)
+1. **Write `lib/solver.go`**: `validate`, `hamiltonianDFS`, `wouldClosePrematureCycle`, `constrainedBacktrack`, `Solve` — iterate until all tests pass
+1. **Run `go vet` and `staticcheck`** — zero warnings required before Phase 3
+1. **Verify with the Phase 1 counterexample graph** — `TestSolve_MergeCounterexample` must pass
 
----
+______________________________________________________________________
 
 ## 3. Implementation Snippets
 

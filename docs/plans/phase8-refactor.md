@@ -15,7 +15,7 @@
 - [x] **R11** — Dagger pipeline: `go vet`, `go test -race`, `-ldflags="-s -w" -trimpath`
 - [x] **R12** — fuzz test `Solve`
 
----
+______________________________________________________________________
 
 ## Goal
 
@@ -27,7 +27,7 @@ The issues below are organized by severity: **High** (correctness or safety risk
 **Medium** (structural debt that compounds as features are added), **Low**
 (style / micro-optimization).
 
----
+______________________________________________________________________
 
 ## High Priority
 
@@ -50,7 +50,7 @@ g := buildGraph(p.Participants, p.Blocks)  // ← allocated again
 1. `validateStructural(p Problem) error` — checks participant count, duplicate IDs,
    and block participant references. No graph needed. This is what the exported
    `Validate` (CLI's `validate` subcommand) actually needs.
-2. `checkHall(g *graph) error` — Hall's condition check on an already-built graph.
+1. `checkHall(g *graph) error` — Hall's condition check on an already-built graph.
    Called from `Solve()` after `buildGraph`, on the same graph the solver will use.
 
 ```
@@ -62,7 +62,7 @@ This split also cleanly accommodates Phase 8's design: `applyRequiredConstraints
 runs between `buildGraph` and `checkHall` inside `Solve`, with no changes to either
 validation function.
 
----
+______________________________________________________________________
 
 ### R2 — Solver abstraction + context cancellation (`lib/solver.go`, `lib/analyze.go`)
 
@@ -151,7 +151,7 @@ longer needs a goroutine: it can call `hamiltonianSolver` directly on the callin
 goroutine, and the solver will return promptly when `ctx` fires. The goroutine launch
 and `select` in `Analyze` can be removed.
 
----
+______________________________________________________________________
 
 ### R3 — Error types in `lib/` (`lib/types.go`)
 
@@ -202,17 +202,17 @@ default:
 
 **Summary of lib error contract:**
 
-| Error                      | Meaning                         | HTTP status |
-| -------------------------- | ------------------------------- | ----------- |
-| `ErrInvalid` (wrapped)     | Problem definition is malformed | 400         |
-| `ErrInfeasible` (sentinel) | No valid assignment exists      | 422         |
-| `context.DeadlineExceeded` | Solver timed out                | 504         |
-| `context.Canceled`         | Request canceled                | 499 / drop  |
+| Error | Meaning | HTTP status |
+| -- | -- | -- |
+| `ErrInvalid` (wrapped) | Problem definition is malformed | 400 |
+| `ErrInfeasible` (sentinel) | No valid assignment exists | 422 |
+| `context.DeadlineExceeded` | Solver timed out | 504 |
+| `context.Canceled` | Request canceled | 499 / drop |
 
 No additional custom error types are needed. Context errors are stdlib; all other
 outcomes are covered by the two sentinels.
 
----
+______________________________________________________________________
 
 ## Medium Priority
 
@@ -346,7 +346,7 @@ func TestParticipantRoundtrip(t *testing.T) {
 // ... similar for Block, Solution, Score
 ```
 
----
+______________________________________________________________________
 
 ### R5 — Move server entrypoint to `cmd/server/` (`cmd/server/`, `server/`)
 
@@ -422,18 +422,18 @@ project of this size; the `cmd/` convention is a preference, not a requirement. 
 cost is the non-standard layout and a minor inconsistency with `cmd/giftexchange/`.
 Document the choice in `CLAUDE.md` if kept.
 
----
+______________________________________________________________________
 
 ### R6 — Define and export lib constants; pull infrastructure constants to one site
 
 **Problem.** Magic numbers appear in multiple files with no shared source of truth:
 
-| Value                              | Files                                                             |
-| ---------------------------------- | ----------------------------------------------------------------- |
-| `MaxSolutions` default of `5`      | `lib/solver.go`, `server/handlers.go`, `cmd/giftexchange/main.go` |
-| `collisionThreshold` of `5`        | `lib/solver.go` (already a `const`, but unexported and inline)    |
-| Body size limit `1<<20` (1 MB)     | `server/handlers.go`                                              |
-| Default timeout `10 * time.Second` | `server/handlers.go`                                              |
+| Value | Files |
+| -- | -- |
+| `MaxSolutions` default of `5` | `lib/solver.go`, `server/handlers.go`, `cmd/giftexchange/main.go` |
+| `collisionThreshold` of `5` | `lib/solver.go` (already a `const`, but unexported and inline) |
+| Body size limit `1<<20` (1 MB) | `server/handlers.go` |
+| Default timeout `10 * time.Second` | `server/handlers.go` |
 
 **Fix — lib constants (exported, because callers need to reference defaults):**
 
@@ -485,15 +485,15 @@ referenced by `cmd/server/main.go` for flag defaults and `http.Server` construct
 - Keep unexported if it is purely an internal implementation detail (algorithm
   tuning, one-use magic numbers that callers never see).
 
----
+______________________________________________________________________
 
 ### R7 — Centralize seed resolution (three independent sites)
 
 **Problem.** "If seed == 0, generate one" logic appears independently in:
 
 1. `lib/solver.go:Solve()` — resolves seed if 0
-2. `server/handlers.go:dtoToProblem()` — resolves seed before calling `Solve`
-3. `cmd/giftexchange/main.go:cmdSolve()` — resolves seed before calling `Solve`
+1. `server/handlers.go:dtoToProblem()` — resolves seed before calling `Solve`
+1. `cmd/giftexchange/main.go:cmdSolve()` — resolves seed before calling `Solve`
 
 The handler and CLI pre-resolve so they can echo the seed back to the caller. `Solve`
 also resolves defensively — making its internal resolution dead code on the server
@@ -521,7 +521,7 @@ Remove the seed-resolution block from `Solve`. CLI and server both call `ge.NewS
 when the user provides no seed, then pass the resolved value to `Solve` and echo it
 back.
 
----
+______________________________________________________________________
 
 ### R8 — `http.Server` transport timeouts (`cmd/server/main.go`)
 
@@ -545,7 +545,7 @@ srv := &http.Server{
 fires first and returns a clean JSON error body, rather than the server closing the
 connection mid-response.
 
----
+______________________________________________________________________
 
 ### R9 — Go 1.22 method-based mux routing; drop empty `handler` struct (`server/`)
 
@@ -567,7 +567,7 @@ mux.HandleFunc("GET /api/v1/health", healthHandler)
 `handler` struct and `newHandler()` constructor are deleted. The `r.Method` check in
 `solveHandler` is deleted (the mux enforces it).
 
----
+______________________________________________________________________
 
 ## Low Priority
 
@@ -596,7 +596,7 @@ parts[i] = strconv.Itoa(indices[(minPos+i)%len(indices)])
 After this, `score.go` no longer imports `fmt` (only `sort` was using it for the
 int→string case; `strings.Join` remains from `strings`). Update the import block.
 
----
+______________________________________________________________________
 
 ### R11 — Dagger pipeline hardening (`.dagger/`)
 
@@ -604,7 +604,7 @@ int→string case; `strings.Join` remains from `strings`). Update the import blo
    `./cmd/server` (post-R5) with `-ldflags="-s -w" -trimpath`. Smaller binary,
    no local filesystem paths embedded.
 
-2. **Test + vet step.** Add a `Test` function to the Dagger module:
+1. **Test + vet step.** Add a `Test` function to the Dagger module:
 
    ```go
    pub Test(): String! {
@@ -617,11 +617,11 @@ int→string case; `strings.Join` remains from `strings`). Update the import blo
    }
    ```
 
-3. **Output naming.** Rename `-o binary` to `-o gift-exchange` in the Go build step
+1. **Output naming.** Rename `-o binary` to `-o gift-exchange` in the Go build step
    so the `withFile("gift-exchange", binary, ...)` rename in the container is
    unnecessary.
 
----
+______________________________________________________________________
 
 ### R12 — Fuzz testing (`lib/solver_test.go`)
 
@@ -656,7 +656,7 @@ func FuzzSolve(f *testing.F) {
 
 Run with: `go test -fuzz=FuzzSolve -fuzztime=60s ./lib/`
 
----
+______________________________________________________________________
 
 ## Resulting Directory Layout
 
@@ -694,21 +694,21 @@ gift-exchange/
     └── main.dang             ← build target updated to ./cmd/server
 ```
 
----
+______________________________________________________________________
 
 ## Implementation Order
 
 The following sequence minimizes merge conflicts with Phase 8:
 
 1. **R10** — slice/strconv cleanup. Pure style, zero risk.
-2. **R3** — add `ErrInvalid`. Phase 8 handler tests depend on error classification.
-3. **R6** — define constants. Unblocks R7 (seed) and R8 (timeouts).
-4. **R1** — split `validate`. Phase 8 plan already assumes `validateStructural` + `checkHall` split.
-5. **R2** — `solverFunc` abstraction + ctx cancellation. Most invasive lib change; do after R1.
-6. **R4** — `internal/dto`. Mechanical but touches many files; do before Phase 8 adds `Required`.
-7. **R5** — `cmd/server/` layout. Once `server/` is a package, R8 and R9 follow naturally.
-8. **R7** — seed centralization. Depends on R5 (one fewer site).
-9. **R8** — transport timeouts. One-liner after R5.
-10. **R9** — mux routing. After R5 (`server/` package, not `package main`).
-11. **R11** — Dagger. After R5 (build target changes to `./cmd/server`).
-12. **R12** — fuzz tests. Additive, any time after R1/R2 stabilize.
+1. **R3** — add `ErrInvalid`. Phase 8 handler tests depend on error classification.
+1. **R6** — define constants. Unblocks R7 (seed) and R8 (timeouts).
+1. **R1** — split `validate`. Phase 8 plan already assumes `validateStructural` + `checkHall` split.
+1. **R2** — `solverFunc` abstraction + ctx cancellation. Most invasive lib change; do after R1.
+1. **R4** — `internal/dto`. Mechanical but touches many files; do before Phase 8 adds `Required`.
+1. **R5** — `cmd/server/` layout. Once `server/` is a package, R8 and R9 follow naturally.
+1. **R7** — seed centralization. Depends on R5 (one fewer site).
+1. **R8** — transport timeouts. One-liner after R5.
+1. **R9** — mux routing. After R5 (`server/` package, not `package main`).
+1. **R11** — Dagger. After R5 (build target changes to `./cmd/server`).
+1. **R12** — fuzz tests. Additive, any time after R1/R2 stabilize.

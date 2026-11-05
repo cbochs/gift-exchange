@@ -25,7 +25,7 @@
 - [x] **Phase 17 — Dead Edge Analysis** (`plans/phase17-dead-edge-analysis.md`): Per-edge dead edge analysis in `Analyze`: solution-dead (fixing u→v breaks bipartite matching) and Hamiltonian-dead (fixing u→v blocks any Hamiltonian cycle). Replaces global `HamiltonianPossible` flag. Lib + CLI.
 - [ ] **Phase 18 — Analyze Cleanup** (`plans/phase18-analyze-cleanup.md`): Extract shared `bipartiteMatch` primitive; complete dead edge test coverage; fix doc comment ambiguity; minor CLI output ordering fix. Lib + CLI.
 
----
+______________________________________________________________________
 
 ## Vision
 
@@ -35,7 +35,7 @@ A stateless web application for creating optimized gift exchanges. Given a list 
 
 Find a permutation of participants (everyone gives exactly one gift, everyone receives exactly one gift) where no constraint is violated, all cycles are as long as possible, and the number of cycles is minimized.
 
----
+______________________________________________________________________
 
 ## Architecture
 
@@ -60,19 +60,19 @@ The system is organized as three distinct tiers sharing a well-defined contract:
 
 The library is independently usable from both the CLI and the web backend with no coupling between the two consumers.
 
----
+______________________________________________________________________
 
 ## Technology Stack
 
-| Layer    | Technology                    | Rationale                                 |
-| -------- | ----------------------------- | ----------------------------------------- |
-| Library  | Go (stdlib only)              | Fast, testable, no runtime deps           |
-| CLI      | Go (`cobra` or stdlib `flag`) | Direct library consumer, no HTTP overhead |
-| Backend  | Go `net/http`                 | Stateless, no framework needed            |
-| Frontend | Vanilla HTML + CSS + JS       | Minimal dependency surface                |
-| Graph UI | D3.js (CDN)                   | Mature force-directed graph visualization |
+| Layer | Technology | Rationale |
+| -- | -- | -- |
+| Library | Go (stdlib only) | Fast, testable, no runtime deps |
+| CLI | Go (`cobra` or stdlib `flag`) | Direct library consumer, no HTTP overhead |
+| Backend | Go `net/http` | Stateless, no framework needed |
+| Frontend | Vanilla HTML + CSS + JS | Minimal dependency surface |
+| Graph UI | D3.js (CDN) | Mature force-directed graph visualization |
 
----
+______________________________________________________________________
 
 ## Directory Structure
 
@@ -100,7 +100,7 @@ gift-exchange/
 └── go.sum
 ```
 
----
+______________________________________________________________________
 
 ## API Contract (Summary)
 
@@ -111,37 +111,37 @@ GET  /api/v1/health    — Liveness check
 
 Full schema defined in `server/api.go` and detailed in Phase 4.
 
----
+______________________________________________________________________
 
 ## Phases
 
-| Phase | Title                | Goal                                                                    |
-| ----- | -------------------- | ----------------------------------------------------------------------- |
-| 1     | Problem Exploration  | Formalize the problem; identify algorithms and objective fn             |
-| 2     | Core Library         | Implement and test the solver library                                   |
-| 3     | CLI                  | Expose the library via a usable command-line interface                  |
-| 4     | Web Backend          | Wrap the library in a stateless HTTP API                                |
-| 5     | Web Frontend         | Build the presentation layer with graph visualization                   |
-| 6     | UI Polish            | Bug fixes, symmetric relationships, history blocks, mobile layout       |
-| 7     | Deployment           | Containerize and deploy to Kubernetes via Helm behind Forward Auth      |
-| 8     | Refactoring          | Solver abstraction, shared DTOs, project layout, error types, constants |
-| 9     | Required Assignments | Force specific gifter→recipient pairs in every solution                 |
+| Phase | Title | Goal |
+| -- | -- | -- |
+| 1 | Problem Exploration | Formalize the problem; identify algorithms and objective fn |
+| 2 | Core Library | Implement and test the solver library |
+| 3 | CLI | Expose the library via a usable command-line interface |
+| 4 | Web Backend | Wrap the library in a stateless HTTP API |
+| 5 | Web Frontend | Build the presentation layer with graph visualization |
+| 6 | UI Polish | Bug fixes, symmetric relationships, history blocks, mobile layout |
+| 7 | Deployment | Containerize and deploy to Kubernetes via Helm behind Forward Auth |
+| 8 | Refactoring | Solver abstraction, shared DTOs, project layout, error types, constants |
+| 9 | Required Assignments | Force specific gifter→recipient pairs in every solution |
 
 Each phase builds on the previous. Phases 3 and 4 can overlap once the library API stabilizes.
 
----
+______________________________________________________________________
 
 ## Working Norms
 
 1. **Documentation stays current.** When experiments or implementation reveal insights that contradict or refine the plan, update the relevant plan document before moving on. Plans are living documents, not historical artifacts.
-2. **Tripwire on design decisions.** If a design choice is required during experimentation or implementation that isn't already resolved in the plan, stop and ask rather than improvise. Undocumented decisions become silent technical debt.
+1. **Tripwire on design decisions.** If a design choice is required during experimentation or implementation that isn't already resolved in the plan, stop and ask rather than improvise. Undocumented decisions become silent technical debt.
 
----
+______________________________________________________________________
 
 ## Key Design Principles
 
 1. **Library first** — All algorithm logic lives in `lib/`. The CLI and server are thin wrappers.
-2. **Stateless** — No database, no session state. Each `/solve` request is self-contained.
-3. **Test-driven** — Library tests are written alongside (or before) implementation. The solver must be verifiably correct before the CLI or server is built.
-4. **Reproducible** — A solution is fully reproducible from the JSON export (participants + blocks + seed + selected solution index).
-5. **Multiple solutions** — The solver returns the top-k solutions ranked by score, giving users a choice.
+1. **Stateless** — No database, no session state. Each `/solve` request is self-contained.
+1. **Test-driven** — Library tests are written alongside (or before) implementation. The solver must be verifiably correct before the CLI or server is built.
+1. **Reproducible** — A solution is fully reproducible from the JSON export (participants + blocks + seed + selected solution index).
+1. **Multiple solutions** — The solver returns the top-k solutions ranked by score, giving users a choice.

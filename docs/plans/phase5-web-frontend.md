@@ -12,18 +12,18 @@
 
 Build a minimal, dependency-light web frontend that serves as the presentation layer for the gift exchange API. It provides a form to define participants and constraints, visualizes the result as a network graph, and supports JSON import/export for reproducibility.
 
----
+______________________________________________________________________
 
 ## 1. High-Level Design
 
 ### 1.1 Technology Choices
 
-| Concern             | Choice                   | Rationale                                         |
-| ------------------- | ------------------------ | ------------------------------------------------- |
-| Framework           | Vanilla JS (ES modules)  | No build step, no npm, easy to audit and maintain |
-| Styling             | Plain CSS                | No Tailwind/Bootstrap dependency                  |
-| Graph visualization | D3.js v7 (CDN)           | Force-directed graph is a perfect fit; mature API |
-| HTTP client         | `fetch` (browser native) | No axios/jQuery needed                            |
+| Concern | Choice | Rationale |
+| -- | -- | -- |
+| Framework | Vanilla JS (ES modules) | No build step, no npm, easy to audit and maintain |
+| Styling | Plain CSS | No Tailwind/Bootstrap dependency |
+| Graph visualization | D3.js v7 (CDN) | Force-directed graph is a perfect fit; mature API |
+| HTTP client | `fetch` (browser native) | No axios/jQuery needed |
 
 The entire frontend is three files: `index.html`, `app.js`, `style.css`. The backend serves them at `/` when run with `--static web/`.
 
@@ -166,23 +166,23 @@ Frontend testing focuses on behavior rather than DOM internals.
 - Import a JSON with `_solutions` → no API call made
 - Resize window → graph layout adjusts
 
----
+______________________________________________________________________
 
 ## 2. Implementation Plan
 
 1. **Create `web/index.html`**: static shell with layout skeleton, D3 CDN script tag
-2. **Create `web/style.css`**: minimal two-column layout, form styling, solution tab styling
-3. **Create `web/app.js`** in sections:
+1. **Create `web/style.css`**: minimal two-column layout, form styling, solution tab styling
+1. **Create `web/app.js`** in sections:
    a. State management + update functions
    b. Form rendering (participants, blocks, options)
    c. API client (`solveExchange(state)` → fetch → update state)
    d. Graph rendering (D3 force simulation setup, node/edge updates)
    e. Solution tab rendering + selection
    f. JSON import/export handlers
-4. **Wire the backend** `--static web/` and test end-to-end in browser
-5. **Smoke test** all manual test cases above
+1. **Wire the backend** `--static web/` and test end-to-end in browser
+1. **Smoke test** all manual test cases above
 
----
+______________________________________________________________________
 
 ## 3. Implementation Snippets
 

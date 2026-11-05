@@ -13,7 +13,7 @@
 
 Wrap the `lib/` package in a stateless HTTP API using `net/http`. The backend has no database, no sessions, and no persistent state. Every request is self-contained. This phase also finalizes the API contract that the frontend will consume.
 
----
+______________________________________________________________________
 
 ## 1. High-Level Design
 
@@ -174,10 +174,10 @@ type ErrorResponse struct {
 `server/handlers.go` contains one handler per endpoint. Handlers follow a consistent pattern:
 
 1. Decode request body
-2. Map DTO → library types
-3. Call library
-4. Map library types → response DTO
-5. Encode response
+1. Map DTO → library types
+1. Call library
+1. Map library types → response DTO
+1. Encode response
 
 Error handling is centralized through a `writeError(w, status, msg)` helper. No error is swallowed — all errors reach the response.
 
@@ -186,9 +186,9 @@ Error handling is centralized through a `writeError(w, status, msg)` helper. No 
 A minimal middleware chain is applied to all routes:
 
 1. **CORS**: `Access-Control-Allow-Origin: *` (configurable via `--cors-origin` flag) + preflight `OPTIONS` handling
-2. **Content-Type enforcement**: POST handlers return `415` if `Content-Type` is not `application/json`
-3. **Request size limit**: `http.MaxBytesReader(w, r.Body, 1<<20)` (1 MB) to prevent runaway inputs
-4. **Timeout**: `http.TimeoutHandler` wraps each handler with a server-side deadline (default 15s, configurable)
+1. **Content-Type enforcement**: POST handlers return `415` if `Content-Type` is not `application/json`
+1. **Request size limit**: `http.MaxBytesReader(w, r.Body, 1<<20)` (1 MB) to prevent runaway inputs
+1. **Timeout**: `http.TimeoutHandler` wraps each handler with a server-side deadline (default 15s, configurable)
 
 ### 1.6 Server Configuration
 
@@ -221,19 +221,19 @@ Tests use `httptest.NewRecorder()` and `httptest.NewServer()` — no real networ
 
 - `TestSolveHandler_PropertyValid`: for random valid inputs, every returned solution passes the property validator from Phase 2
 
----
+______________________________________________________________________
 
 ## 2. Implementation Plan
 
 1. **Create `server/api.go`**: all DTO types — no dependencies on `lib/`
-2. **Create `server/handlers.go`**: `solveHandler`, `healthHandler`, mapping functions
-3. **Create `server/main.go`**: `newServer(opts) *http.ServeMux`, CLI flag parsing, `http.ListenAndServe`
-4. **Implement CORS and middleware** as wrapping functions
-5. **Write `server/handlers_test.go`**: all handler tests using `httptest`
-6. **Manually test** using `curl` against a running server and the existing `participants.json` as input
-7. **Address any library API friction** (coordinate with Phase 2 library changes)
+1. **Create `server/handlers.go`**: `solveHandler`, `healthHandler`, mapping functions
+1. **Create `server/main.go`**: `newServer(opts) *http.ServeMux`, CLI flag parsing, `http.ListenAndServe`
+1. **Implement CORS and middleware** as wrapping functions
+1. **Write `server/handlers_test.go`**: all handler tests using `httptest`
+1. **Manually test** using `curl` against a running server and the existing `participants.json` as input
+1. **Address any library API friction** (coordinate with Phase 2 library changes)
 
----
+______________________________________________________________________
 
 ## 3. Implementation Snippets
 

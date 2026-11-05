@@ -9,14 +9,14 @@
 
 All changes are frontend-only (`server/web/`). No Go changes required.
 
----
+______________________________________________________________________
 
 ## Overview
 
 Four targeted improvements to the web UI, each scoped to a single concern.
 None depend on each other; they can be implemented in any order.
 
----
+______________________________________________________________________
 
 ## P1 — Solutions Panel: Two-Row Header Layout
 
@@ -73,7 +73,7 @@ on narrow screens.
 **Impact on `--solutions-h`**: Increase from 210px to 230px to accommodate the
 two-row header while keeping the detail scrollable area the same height.
 
----
+______________________________________________________________________
 
 ## P2 — D3 Graph: Zoom and Pan Support
 
@@ -94,7 +94,7 @@ Add `d3.zoom()` to the SVG. All graph layers must be wrapped in a single
    layer appends (`validEdgeLayer`, `solutionEdgeLayer`, `nodeCircleLayer`,
    `nodeLabelLayer`) to append to `zoomLayer` instead of `svgSel`.
 
-2. Create and apply a zoom behavior:
+1. Create and apply a zoom behavior:
 
    ```js
    const zoom = d3
@@ -118,7 +118,7 @@ Add `d3.zoom()` to the SVG. All graph layers must be wrapped in a single
    The `filter` ensures that pointer-down on a node circle falls through to node
    drag, not panning. Wheel events always zoom regardless of target.
 
-3. Expose `zoom` and `svgSel` in module scope so `restartGraph` can call
+1. Expose `zoom` and `svgSel` in module scope so `restartGraph` can call
    `svgSel.call(zoom.transform, d3.zoomIdentity)` to reset view on full restart
    (optional but nice — prevents old zoom state persisting after participant list
    changes).
@@ -135,7 +135,7 @@ one-finger drag for pan). The 300px mobile height stays but is now explorable.
 - Desktop: scroll to zoom, drag background to pan, drag node to reposition
 - Mobile: pinch to zoom, one-finger drag on background to pan, drag node to reposition
 
----
+______________________________________________________________________
 
 ## P3 — D3 Graph: Disconnected-Component Gravity Fix
 
@@ -189,7 +189,7 @@ This avoids overcorrection (all nodes collapsing to center).
 dominates layout for connected nodes; the X/Y gravity is too weak to distort
 normal layouts.
 
----
+______________________________________________________________________
 
 ## P4 — Participant Cap: 20-Person Limit with Count Display
 
@@ -231,7 +231,7 @@ const MAX_PARTICIPANTS = 20;
    document.getElementById("btn-add-participant").disabled = atCap;
    ```
 
-2. `addParticipant()`: add a guard at the top as a defensive backstop:
+1. `addParticipant()`: add a guard at the top as a defensive backstop:
 
    ```js
    if (state.participants.length >= MAX_PARTICIPANTS) return;
@@ -257,19 +257,19 @@ const MAX_PARTICIPANTS = 20;
 - Removing a participant re-enables the Add control immediately (next
   `renderParticipantList()` call clears `disabled`)
 
----
+______________________________________________________________________
 
 ## Files to Change
 
-| File                    | Changes                                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `server/web/index.html` | P1: restructure solutions header; P4: add count span to Participants summary                                                   |
-| `server/web/app.js`     | P2: zoom behavior + zoom layer; P3: forceX/Y + charge reduction; P4: count update + disabled state + MAX_PARTICIPANTS constant |
-| `server/web/style.css`  | P1: two-row header styles + solutions height; P2: SVG cursor; P4: `.section-count` style                                       |
+| File | Changes |
+| -- | -- |
+| `server/web/index.html` | P1: restructure solutions header; P4: add count span to Participants summary |
+| `server/web/app.js` | P2: zoom behavior + zoom layer; P3: forceX/Y + charge reduction; P4: count update + disabled state + MAX_PARTICIPANTS constant |
+| `server/web/style.css` | P1: two-row header styles + solutions height; P2: SVG cursor; P4: `.section-count` style |
 
 No Go files, no API changes, no test changes.
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 

@@ -13,7 +13,7 @@
 
 All changes are frontend-only (`server/web/`). No Go changes, no API changes.
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -27,7 +27,7 @@ E1 and E2 form the logic foundation and should be done first (in that order).
 E3–E6 are the four UI pieces and can be done in any order after E2. E7 depends
 on E2. E8 is independent and can be done last.
 
----
+______________________________________________________________________
 
 ## Design Decisions
 
@@ -43,12 +43,12 @@ Absent or `false` means enabled (the default). This means:
 
 ### Semantics
 
-| Item disabled | Effect on solve                                                                                                                                                |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Participant   | Excluded from participants; all their blocks and relationships also excluded                                                                                   |
-| Block         | Not included in effectiveBlocks                                                                                                                                |
-| Block group   | All blocks in the group excluded (cascades); individual `disabled` flags on blocks within the group are additive but do not matter while the group is disabled |
-| Relationship  | Not expanded into effectiveBlocks                                                                                                                              |
+| Item disabled | Effect on solve |
+| -- | -- |
+| Participant | Excluded from participants; all their blocks and relationships also excluded |
+| Block | Not included in effectiveBlocks |
+| Block group | All blocks in the group excluded (cascades); individual `disabled` flags on blocks within the group are additive but do not matter while the group is disabled |
+| Relationship | Not expanded into effectiveBlocks |
 
 A block is _effectively disabled_ if `block.disabled || group?.disabled`, where
 `group` is the block's containing group (if any). This is resolved purely in
@@ -95,7 +95,7 @@ Block group headers get the same toggle button and `.disabled` class, with the
 label text dimmed. When a group is disabled, its contained blocks are rendered
 with the same `.disabled` class regardless of their individual flags.
 
----
+______________________________________________________________________
 
 ## E1 — State Shape
 
@@ -117,7 +117,7 @@ No default value needs to be set for new objects — absent `disabled` means
 enabled. No changes to `applyImport`, `saveState`, `loadFromLocalStorage`, or
 `onReset` are needed (reset replaces state wholesale; import uses `?? []`).
 
----
+______________________________________________________________________
 
 ## E2 — Filtering Logic
 
@@ -195,7 +195,7 @@ floats unconnected).
 
 The function signature and body are **unchanged**.
 
----
+______________________________________________________________________
 
 ## E3 — Participant Toggle
 
@@ -282,7 +282,7 @@ A shared `.item-name` class should be added to the name `<span>` in all three
 list types (participants, blocks, relationships) to make the disabled CSS rule
 target precisely.
 
----
+______________________________________________________________________
 
 ## E4 — Block Toggle
 
@@ -345,7 +345,7 @@ When a group is disabled, the individual block toggle buttons within it are
 disabled (grayed out). The block's own `.disabled` flag is preserved — it will
 take effect again if the group is later re-enabled.
 
----
+______________________________________________________________________
 
 ## E5 — Block Group Toggle
 
@@ -390,7 +390,7 @@ if (group.disabled) header.classList.add("disabled");
 The `.block-group-header.disabled .block-group-label` text is dimmed via the
 existing `.disabled` CSS rule (`.disabled > span` selector, or explicit class).
 
----
+______________________________________________________________________
 
 ## E6 — Relationship Toggle
 
@@ -435,7 +435,7 @@ state.relationships.forEach((r, i) => {
 });
 ```
 
----
+______________________________________________________________________
 
 ## E7 — Graph: Disabled Node Styling
 
@@ -496,7 +496,7 @@ Note: `buildValidEdges` receives `activeParticipants(state)` (from E2), so
 disabled participants automatically have no valid edges in the simulation.
 They will float freely in the graph, pulled only by the center/gravity forces.
 
----
+______________________________________________________________________
 
 ## E8 — Hash v4
 
@@ -519,13 +519,13 @@ Extends v3 with four optional arrays of indices into their respective
 base arrays. Arrays are omitted entirely when empty (keeps hash size minimal
 for common case).
 
-| Field | Type       | Indexes into | Meaning                          |
-| ----- | ---------- | ------------ | -------------------------------- |
-| `dp`  | `number[]` | `p`          | Disabled participant indices     |
-| `dr`  | `number[]` | `r`          | Disabled relationship indices    |
-| `db`  | `number[]` | `b`          | Disabled ungrouped-block indices |
-| `dg`  | `number[]` | `g`          | Disabled block-group indices     |
-| `dbg` | `number[]` | `bg`         | Disabled grouped-block indices   |
+| Field | Type | Indexes into | Meaning |
+| -- | -- | -- | -- |
+| `dp` | `number[]` | `p` | Disabled participant indices |
+| `dr` | `number[]` | `r` | Disabled relationship indices |
+| `db` | `number[]` | `b` | Disabled ungrouped-block indices |
+| `dg` | `number[]` | `g` | Disabled block-group indices |
+| `dbg` | `number[]` | `bg` | Disabled grouped-block indices |
 
 ### `encodeStateToHash` update
 
@@ -655,18 +655,18 @@ function decodeV4(compact) {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Files to Change
 
-| File                   | Changes                                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| `server/web/app.js`    | E1–E8: filtering functions, all four render functions, restartGraph/recolorGraph, hash encode/decode |
-| `server/web/style.css` | E3: `.toggle-btn`, `li.disabled`, `.node-disabled`                                                   |
+| File | Changes |
+| -- | -- |
+| `server/web/app.js` | E1–E8: filtering functions, all four render functions, restartGraph/recolorGraph, hash encode/decode |
+| `server/web/style.css` | E3: `.toggle-btn`, `li.disabled`, `.node-disabled` |
 
 No HTML changes needed — all new UI elements are created via JS.
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 

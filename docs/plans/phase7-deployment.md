@@ -12,7 +12,7 @@
 
 Package the server as a self-contained container image and publish it to ghcr.io. The server is stateless and auth-agnostic — a Forward Auth proxy handles authentication entirely external to the application.
 
----
+______________________________________________________________________
 
 ## 1. Static File Embedding
 
@@ -58,7 +58,7 @@ if cfg.staticDir != "" {
 }
 ```
 
----
+______________________________________________________________________
 
 ## 2. Dagger Build and Release Pipeline
 
@@ -103,7 +103,7 @@ The release workflow is triggered by every pushed tag matching `v*`. It selects 
 
 The Go runtime version is explicitly set to `1.27.3` for the Go, golangci-lint, and Staticcheck modules, so their project checks use `golang:1.27.3-alpine`. The upstream modules also have internal helper images (`golang:1.26-alpine`, `golang:1.27-alpine`, and a pinned golangci-lint tool image) that are not configurable through workspace settings. The release helper uses the latest Alpine image pinned as `alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a`.
 
----
+______________________________________________________________________
 
 ## 3. Forward Auth
 
@@ -117,18 +117,18 @@ k8s liveness and readiness probes originate from the kubelet and hit the **pod I
 
 This app has no OAuth flows, no login callbacks, no session state. No redirect URLs need to be configured anywhere in the application. The hostname only appears in `GIFT_EXCHANGE_CORS_ORIGIN` and the ingress host field.
 
----
+______________________________________________________________________
 
 ## 4. Configuration Reference
 
 Server configuration is read from `GIFT_EXCHANGE_*` environment variables. CLI flags take precedence over env vars; env vars take precedence over hardcoded defaults.
 
-| Flag            | Env var                     | Default    | Notes                                               |
-| --------------- | --------------------------- | ---------- | --------------------------------------------------- |
-| `--addr`        | `GIFT_EXCHANGE_ADDR`        | `:8080`    | Usually left as default in k8s                      |
-| `--cors-origin` | `GIFT_EXCHANGE_CORS_ORIGIN` | `*`        | Set to `https://<hostname>` in production           |
-| `--timeout`     | `GIFT_EXCHANGE_TIMEOUT`     | `15s`      | Increase if solver is slow for large groups         |
-| `--static`      | `GIFT_EXCHANGE_STATIC`      | (embedded) | Not set in production; `server/web/` in development |
+| Flag | Env var | Default | Notes |
+| -- | -- | -- | -- |
+| `--addr` | `GIFT_EXCHANGE_ADDR` | `:8080` | Usually left as default in k8s |
+| `--cors-origin` | `GIFT_EXCHANGE_CORS_ORIGIN` | `*` | Set to `https://<hostname>` in production |
+| `--timeout` | `GIFT_EXCHANGE_TIMEOUT` | `15s` | Increase if solver is slow for large groups |
+| `--static` | `GIFT_EXCHANGE_STATIC` | (embedded) | Not set in production; `server/web/` in development |
 
 Implementation pattern in `server/main.go`:
 

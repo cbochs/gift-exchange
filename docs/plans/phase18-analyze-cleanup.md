@@ -4,7 +4,7 @@
 
 > Not started.
 
----
+______________________________________________________________________
 
 ## Motivation
 
@@ -19,17 +19,17 @@ of technical debt worth fixing before the codebase grows further:
    excludes a gifter/recipient pair, one does not) and what they do with the
    result. The shared logic should live in one place.
 
-2. **Test coverage is incomplete.** The dead edge tests verify membership of
+1. **Test coverage is incomplete.** The dead edge tests verify membership of
    specific edges but do not verify the *complete* dead edge sets. A partial
    implementation that silently misclassifies some edges would still pass.
    Two cases are also missing entirely: the all-Hamiltonian-dead scenario and
    context cancellation.
 
-3. **Two minor documentation/style issues.** The `SolutionDeadEdges` doc comment
+1. **Two minor documentation/style issues.** The `SolutionDeadEdges` doc comment
    is misleading about the semantics of `nil`. A local helper function in the CLI
    is a two-call abstraction that should be inlined.
 
----
+______________________________________________________________________
 
 ## Changes
 
@@ -49,8 +49,7 @@ func bipartiteMatch(g *graph, excludeGifter, excludeRecipient int) (matchLeft, m
 Refactor `hallViolations` to call `bipartiteMatch(g, -1, -1)` and use the
 returned arrays for the BFS alternating-tree pass.
 
-Refactor `canCompleteMatching` to call `bipartiteMatch(g, excludeGifter,
-excludeRecipient)` and return `matchedCount == g.n-1`.
+Refactor `canCompleteMatching` to call `bipartiteMatch(g, excludeGifter, excludeRecipient)` and return `matchedCount == g.n-1`.
 
 The augment closure and outer loop live in exactly one place.
 
@@ -114,24 +113,23 @@ the order they were first seen when iterating `SolutionDeadEdges` then
 `HamiltonianDeadEdges`. A gifter with only Hamiltonian-dead edges appears after
 all solution-dead gifters regardless of ID order. Since `Analyze` emits both
 slices in sorted-ID order, the CLI should build a single sorted-gifter output
-loop. Simplest fix: collect all dead edges into one slice of `(gifter, recipient,
-kind)` tuples in iteration order (already sorted by gifter ID since
+loop. Simplest fix: collect all dead edges into one slice of `(gifter, recipient, kind)` tuples in iteration order (already sorted by gifter ID since
 `SolutionDeadEdges` and `HamiltonianDeadEdges` iterate in graph index order),
 then group by gifter. This matches the plan's example output where all of Alice's
 lines are adjacent regardless of category.
 
----
+______________________________________________________________________
 
 ## Files to change
 
 | File | Changes |
-| --- | --- |
+| -- | -- |
 | `lib/analyze.go` | Extract `bipartiteMatch`; refactor `hallViolations` and `canCompleteMatching` to call it |
 | `lib/solver_test.go` | Fix `TestAnalyze_DeadEdges_SolutionDead` for completeness; add `_AllHamiltonianDead` and `_CtxCancelled` |
 | `lib/types.go` | Fix doc comments for `SolutionDeadEdges` and `HamiltonianDeadEdges` |
 | `cmd/giftexchange/main.go` | Inline `ensureGifter`; fix output ordering |
 
----
+______________________________________________________________________
 
 ## Acceptance criteria
 

@@ -15,7 +15,7 @@
 
 Allow users to specify assignments that must appear in every solution — e.g. guaranteeing a new participant has a familiar partner, or honoring a special request. This is a full-stack feature: library, API, and frontend.
 
----
+______________________________________________________________________
 
 ## 1. Library Changes (`lib/`)
 
@@ -37,9 +37,9 @@ type Problem struct {
 New checks added to `validate()` after the existing structural checks:
 
 1. Each required pair's `From` and `To` must reference participant IDs in `p.Participants`.
-2. No required pair `{G, R}` may also appear in `p.Blocks` (forbidden and required simultaneously is a contradiction).
-3. No participant ID may appear more than once as `From` across `p.Required` (two outgoing required assignments from the same gifter is impossible in a permutation).
-4. No participant ID may appear more than once as `To` across `p.Required` (same logic for recipients).
+1. No required pair `{G, R}` may also appear in `p.Blocks` (forbidden and required simultaneously is a contradiction).
+1. No participant ID may appear more than once as `From` across `p.Required` (two outgoing required assignments from the same gifter is impossible in a permutation).
+1. No participant ID may appear more than once as `To` across `p.Required` (same logic for recipients).
 
 ### 1.3 `lib/solver.go` — Constraint Injection
 
@@ -82,17 +82,17 @@ The existing `validate()` runs structural checks first; Hall's condition is re-c
 
 ### 1.4 New Tests (`lib/solver_test.go`)
 
-| Test                                         | Expected result                         |
-| -------------------------------------------- | --------------------------------------- |
-| Required pair in 4-person problem            | Every solution includes that assignment |
-| Multiple compatible required pairs           | All solutions honor all of them         |
-| Required pair also in Blocks                 | Validation error                        |
-| Required pair — unknown participant          | Validation error                        |
-| Same gifter in two required entries          | Validation error                        |
-| Same recipient in two required entries       | Validation error                        |
-| Required assignment creates Hall's violation | `ErrInfeasible`                         |
+| Test | Expected result |
+| -- | -- |
+| Required pair in 4-person problem | Every solution includes that assignment |
+| Multiple compatible required pairs | All solutions honor all of them |
+| Required pair also in Blocks | Validation error |
+| Required pair — unknown participant | Validation error |
+| Same gifter in two required entries | Validation error |
+| Same recipient in two required entries | Validation error |
+| Required assignment creates Hall's violation | `ErrInfeasible` |
 
----
+______________________________________________________________________
 
 ## 2. Server Changes
 
@@ -123,15 +123,15 @@ prob.Required = required
 
 ### 2.3 New Handler Tests
 
-| Test                                       | Expected HTTP status |
-| ------------------------------------------ | -------------------- |
-| Valid required pair present in solution    | 200                  |
-| Required references unknown participant ID | 400                  |
-| Required pair conflicts with block         | 422 (ErrInfeasible)  |
-| Required gifter appears twice              | 400                  |
-| Required recipient appears twice           | 400                  |
+| Test | Expected HTTP status |
+| -- | -- |
+| Valid required pair present in solution | 200 |
+| Required references unknown participant ID | 400 |
+| Required pair conflicts with block | 422 (ErrInfeasible) |
+| Required gifter appears twice | 400 |
+| Required recipient appears twice | 400 |
 
----
+______________________________________________________________________
 
 ## 3. Frontend Changes
 
@@ -191,13 +191,13 @@ export function stateToRequest(state) {
 
 Emit `required` only if non-empty. `applyImport()` reads `doc.required ?? []`. Pre-Phase-8 exports default to empty.
 
----
+______________________________________________________________________
 
 ## 4. Implementation Plan
 
 1. **Library** — add `Required []Block` to `Problem`; implement `applyRequiredConstraints()`; extend `validate()` and `Solve()`; write all test cases and verify they pass.
-2. **Server** — extend `SolveRequest` and `dtoToProblem()`; add handler tests.
-3. **Frontend** — add `required: []` to state; add Required sidebar section; update `stateToRequest()`, cascade delete, `applyImport()`, `onDownload()`; add HTML section.
-4. **End-to-end smoke test** — add 4 participants, specify a required assignment, Generate → verify every solution includes that pair; verify infeasible required assignment shows error.
+1. **Server** — extend `SolveRequest` and `dtoToProblem()`; add handler tests.
+1. **Frontend** — add `required: []` to state; add Required sidebar section; update `stateToRequest()`, cascade delete, `applyImport()`, `onDownload()`; add HTML section.
+1. **End-to-end smoke test** — add 4 participants, specify a required assignment, Generate → verify every solution includes that pair; verify infeasible required assignment shows error.
 
 Each layer is independently committable.

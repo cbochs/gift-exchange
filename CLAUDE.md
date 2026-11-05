@@ -4,7 +4,7 @@
 > "Last Completed" sections before closing. This is the primary document for
 > re-orienting in a new session.
 
----
+______________________________________________________________________
 
 ## What This Project Is
 
@@ -16,14 +16,14 @@ everyone). Returns multiple ranked solutions.
 
 **Stack**: Go library + Go HTTP server + Vanilla JS/D3 frontend.
 
----
+______________________________________________________________________
 
 ## How to Get Up to Speed
 
 1. **Read `plans/README.md`** — architecture overview, tech stack, phase status checklist, working norms (documentation currency + tripwire policy)
-2. **Read the plan for the current/next phase** (see "Current State" below)
-3. **Read the plan for the most recently completed phase** for context
-4. Skim `experiments/` to understand empirical basis for algorithm decisions
+1. **Read the plan for the current/next phase** (see "Current State" below)
+1. **Read the plan for the most recently completed phase** for context
+1. Skim `experiments/` to understand empirical basis for algorithm decisions
 
 Do not start any implementation work before reading the relevant phase plan.
 
@@ -34,7 +34,7 @@ Do not start any implementation work before reading the relevant phase plan.
 - `plans/phase<N>-*.md` — status checklist at the top of the active phase
 - `README.md` — user-facing feature list (update when UI features are added)
 
----
+______________________________________________________________________
 
 ## Current State (update this each session)
 
@@ -42,7 +42,7 @@ Do not start any implementation work before reading the relevant phase plan.
 **Last session**: Completed Phase 17 (Dead Edge Analysis). Wrote Phase 18 plan: extract shared `bipartiteMatch` primitive (dedup augmenting-path logic in `hallViolations`/`canCompleteMatching`); complete dead edge test coverage (full set assertions, all-Hamiltonian-dead case, ctx cancellation); fix misleading `nil` doc comments in `types.go`; inline `ensureGifter` and fix output ordering in CLI.
 **Next action**: Implement Phase 18 after plan approval.
 
----
+______________________________________________________________________
 
 ## Codebase State
 
@@ -80,11 +80,12 @@ gift-exchange/
 │   ├── static.go              ← go:embed web
 │   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
 │   └── web/                   ← embedded frontend assets (LocalStorage, URL link sharing)
-├── dagger.toml                ← Dagger v1 workspace: Go, lint, staticcheck, and local publish modules
+├── dagger.toml                ← Dagger v1 workspace: Go, lint, staticcheck, mdformat, and local publish modules
 ├── dagger.lock                ← Pins Dagger module dependencies
 ├── .dagger/modules/
 │   ├── gift-exchange-build/   ← Builds CLI release binaries and server image binaries
 │   ├── gift-exchange-publish/ ← Publishes GHCR images and GitHub releases
+│   ├── mdformat/              ← Checks and fixes Markdown files with mdformat
 │   ├── platforms/             ← Parses GOOS/GOARCH and normalizes common GNU targets
 │   └── semver/                ← Validates and parses release tags
 ├── .github/workflows/
@@ -117,45 +118,45 @@ gift-exchange/
 
 **The Python file is reference only — do not modify it.**
 
----
+______________________________________________________________________
 
 ## Key Algorithm Decisions (Phase 1 output)
 
 These are settled. Do not re-open them without flagging to the user.
 
-| Decision                 | Choice                                                        | Rationale                                         |
-| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------- |
-| Primary solver           | Hamiltonian DFS (fix start node, per-node shuffled adj lists) | Direct, complete, no merge needed                 |
-| Fallback solver          | Constrained backtracking with `wouldClosePrematureCycle`      | Used only when no Hamiltonian cycle exists        |
-| Cycle target progression | N/M: try N, N/2, N/3, ... until target ≤ 1 (infeasible)       | Automatic; no user-facing `minCycleLen` parameter |
-| Multiple solutions       | Random restarts with directed canonical deduplication         | Stop at ≥5 consecutive collisions                 |
-| Shuffle strategy         | Per-node (each gifter shuffles its own adjacency list)        | Marginally more diverse than global shuffle       |
-| Greedy cycle-merge       | Removed from primary path (proven incomplete)                 | Kept as optional safety net only                  |
-| Score ranking            | Lexicographic: MaxMinCycleLen → MinNumCycles → MaxMaxCycleLen | Hamiltonian cycles always score highest           |
-| User-facing API          | No `minCycleLen` input anywhere (lib, CLI, HTTP, frontend)    | N/M progression is internal                       |
+| Decision | Choice | Rationale |
+| -- | -- | -- |
+| Primary solver | Hamiltonian DFS (fix start node, per-node shuffled adj lists) | Direct, complete, no merge needed |
+| Fallback solver | Constrained backtracking with `wouldClosePrematureCycle` | Used only when no Hamiltonian cycle exists |
+| Cycle target progression | N/M: try N, N/2, N/3, ... until target ≤ 1 (infeasible) | Automatic; no user-facing `minCycleLen` parameter |
+| Multiple solutions | Random restarts with directed canonical deduplication | Stop at ≥5 consecutive collisions |
+| Shuffle strategy | Per-node (each gifter shuffles its own adjacency list) | Marginally more diverse than global shuffle |
+| Greedy cycle-merge | Removed from primary path (proven incomplete) | Kept as optional safety net only |
+| Score ranking | Lexicographic: MaxMinCycleLen → MinNumCycles → MaxMaxCycleLen | Hamiltonian cycles always score highest |
+| User-facing API | No `minCycleLen` input anywhere (lib, CLI, HTTP, frontend) | N/M progression is internal |
 
----
+______________________________________________________________________
 
 ## Working Norms
 
 1. **Documentation stays current.** When implementation reveals something that
    contradicts or refines a plan, update the plan document before proceeding.
-2. **Tripwire on design decisions.** If a design choice is required that isn't already
+1. **Tripwire on design decisions.** If a design choice is required that isn't already
    resolved in the plan, stop and ask rather than improvise.
-3. **Test-driven.** Write `solver_test.go` before `solver.go`. Tests must pass before
+1. **Test-driven.** Write `solver_test.go` before `solver.go`. Tests must pass before
    moving to the next phase.
-4. **Library first.** All algorithm logic lives in `lib/`. CLI and server are thin
+1. **Library first.** All algorithm logic lives in `lib/`. CLI and server are thin
    wrappers. Do not put business logic in handlers or CLI code.
-5. **Commit early and often.** Use conventional commit format (`feat:`, `fix:`,
+1. **Commit early and often.** Use conventional commit format (`feat:`, `fix:`,
    `test:`, `chore:`, etc.) with a body that explains what changed and why. Each
    logical unit of work (a new file, a passing test suite, a bug fix) warrants its
    own commit.
-6. **Challenge ideas from both sides.** Neither of us is always right. When the user
+1. **Challenge ideas from both sides.** Neither of us is always right. When the user
    proposes something, consider it carefully: does it solve the actual problem? Is
    there a simpler path? Is something being missed? Say so clearly. The same applies
    in reverse — push back on Claude's suggestions too. We're a team and together
    greater than the sum of our parts.
-7. **No abstraction for aesthetics.** Don't extract a function just to make code
+1. **No abstraction for aesthetics.** Don't extract a function just to make code
    "look like prose." If a function is called in only one or two places and the body
    is not being duplicated elsewhere, leave it inline. Only abstract when the
    alternative is copy-pasting dense logic across multiple callsites. We optimize for

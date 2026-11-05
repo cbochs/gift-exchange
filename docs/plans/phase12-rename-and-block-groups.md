@@ -10,7 +10,7 @@
 
 All changes are frontend-only (`server/web/`). No Go changes required.
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -19,13 +19,13 @@ Two independent features:
 1. **Participant rename** — change a participant's display name while keeping
    their internal ID (and all block/relationship references) stable.
 
-2. **Block groups** — add an optional `group` field to blocks and a new
+1. **Block groups** — add an optional `group` field to blocks and a new
    `state.blockGroups` array so blocks can be organized into named, collapsible
    groups. "Add as history blocks" creates a dated group automatically.
 
 Both features affect only `app.js`, `index.html`, and `style.css`.
 
----
+______________________________________________________________________
 
 ## F1 — Participant Rename
 
@@ -84,7 +84,7 @@ Style the edit button similarly to the remove button (`.remove-btn`). May
 share the same class or a new `.edit-btn` class with a different icon color
 on hover (e.g., `var(--accent)` instead of `var(--danger)`).
 
----
+______________________________________________________________________
 
 ## F2 — Block Group Data Model
 
@@ -157,7 +157,7 @@ solve setup).
 fidelity. When importing a JSON without `blockGroups`, all blocks are treated
 as ungrouped.
 
----
+______________________________________________________________________
 
 ## F3 — Block Group UI
 
@@ -181,7 +181,7 @@ Implementation approach:
 1. Separate `state.blocks` into ungrouped (no `group` field) and per-group
    buckets. Render ungrouped blocks first as today, then each group in
    `state.blockGroups` order.
-2. Each group renders as a group header `<div>` followed by an inner list
+1. Each group renders as a group header `<div>` followed by an inner list
    (hidden when `collapsed: true`).
 
 **Group header** contains:
@@ -236,7 +236,7 @@ from the participant list.
 No `index.html` change required — the group structure is rendered entirely
 by `renderBlockList()`.
 
----
+______________________________________________________________________
 
 ## F4 — "Add as history blocks" Creates a Named Group
 
@@ -288,7 +288,7 @@ function onAddAsHistoryBlocks() {
 **Duplicate handling:** Blocks already present (with or without a group) are
 skipped. This preserves existing behavior and avoids duplicates across groups.
 
----
+______________________________________________________________________
 
 ## F5 — URL Hash v2 Format
 
@@ -341,19 +341,19 @@ export function decodeStateFromHash(hash) {
 `encodeStateToHash` always writes `#v2:` going forward. Old `#v1:` links
 continue to decode correctly (all blocks become ungrouped, `blockGroups: []`).
 
----
+______________________________________________________________________
 
 ## Files to Change
 
-| File                    | Changes                                                                                                                                                                                                                                                                 |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/web/app.js`     | F1: edit button + rename logic in `renderParticipantList`; F2: `state.blockGroups`, `effectiveBlocks` strip, `saveState`/`applyImport` updates; F3: group-aware `renderBlockList`; F4: `onAddAsHistoryBlocks` rewrite; F5: `encodeStateToHash`/`decodeStateFromHash` v2 |
-| `server/web/style.css`  | F1: `.edit-btn` style; F3: `.block-group-header`, `.block-group-inner`, `.block-group-toggle`, `.block-group-label` styles                                                                                                                                              |
-| `server/web/index.html` | No changes expected                                                                                                                                                                                                                                                     |
+| File | Changes |
+| -- | -- |
+| `server/web/app.js` | F1: edit button + rename logic in `renderParticipantList`; F2: `state.blockGroups`, `effectiveBlocks` strip, `saveState`/`applyImport` updates; F3: group-aware `renderBlockList`; F4: `onAddAsHistoryBlocks` rewrite; F5: `encodeStateToHash`/`decodeStateFromHash` v2 |
+| `server/web/style.css` | F1: `.edit-btn` style; F3: `.block-group-header`, `.block-group-inner`, `.block-group-toggle`, `.block-group-label` styles |
+| `server/web/index.html` | No changes expected |
 
 No Go files, no API changes, no test changes.
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 

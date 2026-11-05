@@ -17,7 +17,7 @@
 All changes are frontend-only (`server/web/`). No Go changes, no API changes,
 no behavior changes visible to users.
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -28,7 +28,7 @@ None of these change observable behavior except B1 (bug fix).
 Items are independent and can be implemented in any order. Suggested grouping:
 bugs first (B1, B2), then JS (S1–S4), then HTML+CSS (H1, C1–C4).
 
----
+______________________________________________________________________
 
 ## B1 — `onReset` Does Not Clear `blockGroups`
 
@@ -43,7 +43,7 @@ pre-existing group IDs and produce unexpected collisions.
 
 **Fix**: Add `state.blockGroups = [];` to `onReset()`.
 
----
+______________________________________________________________________
 
 ## B2 — `window._state` Debug Artifact
 
@@ -56,7 +56,7 @@ window._state = state; // ← delete this line
 A console shortcut left in production. Leaks internal state object to the
 global scope.
 
----
+______________________________________________________________________
 
 ## S1 — Extract `mutated()` Helper
 
@@ -100,7 +100,7 @@ count, not solution invalidation.
 `onAddAsHistoryBlocks` calls `saveStateDebounced()` — after S1 it uses
 `mutated()` which calls the same. Fine.
 
----
+______________________________________________________________________
 
 ## S2 — Fold `renderOptions()` into `renderSidebar()`
 
@@ -125,12 +125,12 @@ function. Since `state.options.seed = resp.seed_used` is set just before, a
 **Fix**:
 
 1. Add `renderOptions()` call at the end of `renderSidebar()`.
-2. Replace the manual DOM update in `onGenerate` with nothing — `renderSidebar()`
+1. Replace the manual DOM update in `onGenerate` with nothing — `renderSidebar()`
    (already called after generate) will handle it.
-3. Remove the now-redundant standalone `renderOptions()` calls from `onReset`
+1. Remove the now-redundant standalone `renderOptions()` calls from `onReset`
    and `onImport`.
 
----
+______________________________________________________________________
 
 ## S3 — Rename `confirm` Local Variable
 
@@ -147,7 +147,7 @@ analogous `confirmRename` function inside `renderBlockList`'s group edit handler
 — that one is already named differently (`confirmRename`), so only the
 participant case needs updating.
 
----
+______________________________________________________________________
 
 ## S4 — Simplify `buildValidEdges`
 
@@ -156,8 +156,8 @@ participant case needs updating.
 Current flow:
 
 1. Build `blockedSet` — set of `"from→to"` strings. ✓
-2. Build `pairSet` — set of all valid `"from→to"` strings (O(n²)).
-3. Iterate `pairSet`, call `indexOf("→")` on each key to recover `fromId`/`toId`,
+1. Build `pairSet` — set of all valid `"from→to"` strings (O(n²)).
+1. Iterate `pairSet`, call `indexOf("→")` on each key to recover `fromId`/`toId`,
    then build the edge object (including a `.has()` check back into `pairSet`
    for bidirectionality).
 
@@ -207,7 +207,7 @@ Note: `source` and `target` are set to `src.id` and `tgt.id` (strings) — d3's
 `forceLink` with `.id(d => d.id)` resolves these to node objects. The existing
 code already does this correctly.
 
----
+______________________________________________________________________
 
 ## H1 — `<ul id="block-list">` Has Invalid Direct Children
 
@@ -228,7 +228,7 @@ move from the combined `#participant-list, #relationship-list, #block-list`
 rule to only `#participant-list, #relationship-list` for the `<ul>` elements,
 and a separate `#block-list` rule for the `<div>`.
 
----
+______________________________________________________________________
 
 ## C1 — Extract `--accent-ring` CSS Custom Property
 
@@ -249,15 +249,14 @@ Add to `:root`:
 
 Replace all three occurrences with `var(--accent-ring)`.
 
----
+______________________________________________________________________
 
 ## C2 — Unify `.edit-btn` / `.remove-btn` into `.icon-btn`
 
 **File**: `style.css`
 
 The participant list `.remove-btn` and `.edit-btn` styles share:
-`background: none; border: none; cursor: pointer; color: var(--muted);
-line-height: 1; padding: 0 2px; flex-shrink: 0;`
+`background: none; border: none; cursor: pointer; color: var(--muted); line-height: 1; padding: 0 2px; flex-shrink: 0;`
 
 The only differences are `font-size` (15px vs 13px) and `margin-left`
 (6px vs 4px), and the hover color (`--danger` vs `--accent`).
@@ -304,7 +303,7 @@ Update HTML/JS to use class `icon-btn remove-btn` and `icon-btn edit-btn`.
 The block-group-header context overrides (`margin-left: 0`, `opacity: 0`)
 remain on `.block-group-header .edit-btn` / `.block-group-header .remove-btn`.
 
----
+______________________________________________________________________
 
 ## C3 — Remove Redundant `.btn-primary:disabled`
 
@@ -320,7 +319,7 @@ remain on `.block-group-header .edit-btn` / `.block-group-header .remove-btn`.
 `button:disabled { opacity: 0.55; cursor: not-allowed; }` already covers this.
 The primary-button rule is redundant.
 
----
+______________________________________________________________________
 
 ## C4 — CSS Tokens for Hash-Banner Colors
 
@@ -341,17 +340,17 @@ Add to `:root`:
 Replace in `.hash-banner` and `.hash-banner-dismiss` rules. Lower priority
 than C1–C3 but keeps all color decisions in one place.
 
----
+______________________________________________________________________
 
 ## Files to Change
 
-| File                    | Changes                              |
-| ----------------------- | ------------------------------------ |
-| `server/web/app.js`     | B1, B2, S1, S2, S3, S4               |
-| `server/web/index.html` | H1 (ul → div for block-list)         |
-| `server/web/style.css`  | H1 (selector update), C1, C2, C3, C4 |
+| File | Changes |
+| -- | -- |
+| `server/web/app.js` | B1, B2, S1, S2, S3, S4 |
+| `server/web/index.html` | H1 (ul → div for block-list) |
+| `server/web/style.css` | H1 (selector update), C1, C2, C3, C4 |
 
----
+______________________________________________________________________
 
 ## Acceptance Criteria
 
