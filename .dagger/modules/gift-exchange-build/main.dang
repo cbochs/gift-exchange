@@ -1,0 +1,42 @@
+"""
+Build gift-exchange release binaries through the Dagger Go module.
+"""
+type GiftExchangeBuild {
+  """
+  Build CLI binaries for releases and server binaries for container images.
+  """
+  binaries(
+    ws: Workspace!,
+    cliPlatforms: [String!]! = [
+      "linux/amd64",
+      "linux/arm64",
+      "darwin/arm64",
+    ],
+
+    serverPlatforms: [String!]! = ["linux/amd64", "linux/arm64"],
+  ): Directory! {
+    let cli = go
+      .module(ws: ws, path: ".")
+      .packages(ws: ws)
+      .get(key: "cmd/giftexchange")
+
+    let server = go
+      .module(ws: ws, path: ".")
+      .packages(ws: ws)
+      .get(key: "cmd/server")
+
+    let cliArtifacts = cliPlatforms.reduce(directory) { artifacts, platform =>
+      artifacts.withFile(
+        "gift-exchange-" + platform.split("/").join("-"),
+        cli.platforms.get(key: platform).binary(ws: ws),
+      )
+    }
+
+    serverPlatforms.reduce(cliArtifacts) { artifacts, platform =>
+      artifacts.withFile(
+        "gift-exchange-server-" + platform.split("/").join("-"),
+        server.platforms.get(key: platform).binary(ws: ws),
+      )
+    }
+  }
+}

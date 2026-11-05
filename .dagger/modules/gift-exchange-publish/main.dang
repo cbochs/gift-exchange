@@ -1,0 +1,122 @@
+"""
+Publish gift-exchange binaries, container images, and GitHub releases.
+"""
+type GiftExchangePublish {
+  """
+  Platforms built for downloadable release binaries.
+  """
+  binaryPlatforms: [String!]!
+
+  """
+  Linux platforms published as container images.
+  """
+  imagePlatforms: [String!]!
+
+  """
+  GitHub repository receiving the release.
+  """
+  repository: String!
+
+  """
+  Container registry used for image publishing.
+  """
+  registry: String!
+
+  new(
+    binaryPlatforms: [String!]! = [
+      "linux/amd64",
+      "linux/arm64",
+      "darwin/arm64",
+    ],
+
+    imagePlatforms: [String!]! = ["linux/amd64", "linux/arm64"],
+    repository: String! = "cbochs/gift-exchange",
+    registry: String! = "ghcr.io",
+  ) {
+    self.binaryPlatforms = binaryPlatforms
+    self.imagePlatforms = imagePlatforms
+    self.repository = repository
+    self.registry = registry
+    self
+  }
+
+  """
+  Publish one tagged release to GHCR and GitHub Releases.
+  """
+  publish(
+    ws: Workspace!,
+    """
+    Release tag, for example v1.2.3 or v1.2.3-rc.1.
+    """
+    tag: String!,
+    """
+    GitHub token with contents:write and packages:write permissions.
+    """
+    token: Secret!,
+    """
+    GitHub username used to authenticate to GHCR.
+    """
+    username: String!,
+  ): String! {
+    let releaseTag = if (semver.isValid(tag) == false) {
+      raise "release tag must be SemVer-compatible: " + tag
+    } else {
+      tag
+    }
+
+    if (imagePlatforms.any { platform => platform.split("/").takeFirst(1).join("") != "linux" }) {
+      raise "imagePlatforms must contain only linux/GOARCH targets"
+    }
+
+    let binaries = build.binaries(
+      ws: ws,
+      cliPlatforms: binaryPlatforms,
+      serverPlatforms: imagePlatforms,
+    )
+    let variants = imagePlatforms.map { platform =>
+      container(platform: platform :: Platform!)
+        .from("scratch")
+        .withFile(
+          "/gift-exchange",
+          binaries.file("gift-exchange-server-" + platform.split("/").join("-")),
+          permissions: 493,
+        )
+        .withEntrypoint(["/gift-exchange"])
+    }
+
+    let imageRef = self.registry + "/" + self.repository + ":" + releaseTag
+    let publishedImage = container
+      .withRegistryAuth(self.registry, username, token)
+      .publish(imageRef, platformVariants: variants)
+
+    let prereleaseFlags = if (semver.isPrerelease(releaseTag)) {
+      ["--prerelease"]
+    } else {
+      []
+    }
+    let releaseAssets = binaryPlatforms.map { platform =>
+      "gift-exchange-" + platform.split("/").join("-")
+    }
+    let releaseURL = container
+      .from("alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a")
+      .withExec(["apk", "add", "--no-cache", "github-cli"])
+      .withDirectory("/release", binaries)
+      .withWorkdir("/release")
+      .withSecretVariable("GH_TOKEN", token)
+      .withExec([
+        "gh",
+        "release",
+        "create",
+        releaseTag,
+        "--repo",
+        self.repository,
+        "--title",
+        releaseTag,
+        "--generate-notes",
+        "--verify-tag",
+      ] + prereleaseFlags + releaseAssets)
+      .stdout
+
+    "Published " + publishedImage + " and " + releaseURL
+  }
+}

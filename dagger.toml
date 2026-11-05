@@ -1,0 +1,58 @@
+# Official Go tooling
+[modules.go]
+source = "dagger.io/go"
+
+[modules.go.settings]
+version = "1.27.2"
+build = ["cmd/giftexchange", "cmd/server"]
+buildFlags = ["-trimpath", "-ldflags=-s -w"]
+
+[modules.golangci-lint]
+source = "github.com/dagger/go/golangci-lint"
+
+[modules.golangci-lint.settings]
+goVersion = "1.27.2"
+
+[modules.staticcheck]
+source = "github.com/dagger/go/staticcheck"
+
+[modules.staticcheck.settings]
+goVersion = "1.27.2"
+
+# Dagger module development SDK
+[modules.dang-sdk]
+source = "dagger.io/sdk/dang"
+
+[sdks.dang]
+module = "dang-sdk"
+
+# Local release modules and reusable helpers
+[modules.gift-exchange-build]
+source = ".dagger/modules/gift-exchange-build"
+
+[sdks.dang.scopes.".dagger/modules/gift-exchange-build"]
+is-module = true
+name = "gift-exchange-build"
+clients = ["dagger.io/go"]
+
+[modules.semver]
+source = ".dagger/modules/semver"
+
+[sdks.dang.scopes.".dagger/modules/semver"]
+is-module = true
+name = "semver"
+
+[modules.gift-exchange-publish]
+source = ".dagger/modules/gift-exchange-publish"
+
+[sdks.dang.scopes.".dagger/modules/gift-exchange-publish"]
+is-module = true
+name = "gift-exchange-publish"
+clients = ["./.dagger/modules/gift-exchange-build", "./.dagger/modules/semver"]
+
+# Settings used by the release workflow with `dagger --env ci`.
+[env.ci.modules.gift-exchange-publish.settings]
+binaryPlatforms = ["linux/amd64", "linux/arm64", "darwin/arm64"]
+imagePlatforms = ["linux/amd64", "linux/arm64"]
+repository = "cbochs/gift-exchange"
+registry = "ghcr.io"

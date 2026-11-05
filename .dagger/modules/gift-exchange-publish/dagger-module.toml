@@ -1,0 +1,13 @@
+name = "gift-exchange-publish"
+engineVersion = "v1.0.0-beta.25"
+
+[runtime]
+  source = "dang"
+
+[[dependencies]]
+  name = "build"
+  source = "../gift-exchange-build"
+
+[[dependencies]]
+  name = "semver"
+  source = "../semver"

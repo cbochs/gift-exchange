@@ -1,7 +1,0 @@
-{
-  "name": "go",
-  "engineVersion": "v0.20.3",
-  "sdk": {
-    "source": "dang"
-  }
-}

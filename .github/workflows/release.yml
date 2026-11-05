@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      DAGGER_X_RELEASE: v1.0.0-beta.25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Dagger checks
+        uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: v1.0.0-beta.25
+          verb: check
+
+  publish:
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      DAGGER_X_RELEASE: v1.0.0-beta.25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish binaries, containers, and GitHub Release
+        uses: dagger/dagger-for-github@v8.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: v1.0.0-beta.25
+          dagger-flags: --progress plain --env ci
+          module: .dagger/modules/gift-exchange-publish
+          call: >-
+            publish
+            --tag=${{ github.ref_name }}
+            --token=env://GITHUB_TOKEN
+            --username=${{ github.actor }}

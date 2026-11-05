@@ -1,0 +1,118 @@
+"""
+Validate and inspect SemVer 2.0.0 versions, accepting an optional leading v.
+"""
+type Semver {
+  let normalized(version: String!): String! {
+    version.trimPrefix("v")
+  }
+
+  let core(version: String!): String! {
+    normalized(version).split("-").takeFirst(1).join("").split("+").takeFirst(1).join("")
+  }
+
+  """
+  Check whether a version follows SemVer 2.0.0 syntax.
+  """
+  isValid(version: String!): Boolean! {
+    normalized(version).match(
+      `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`,
+    ) != null
+  }
+
+  """
+  Major version component, or null when the input is invalid.
+  """
+  major(version: String!): String {
+    if (isValid(version) == false) {
+      return null
+    }
+    core(version).split(".").takeFirst(1).join("")
+  }
+
+  """
+  Minor version component, or null when the input is invalid.
+  """
+  minor(version: String!): String {
+    if (isValid(version) == false) {
+      return null
+    }
+    core(version).split(".").dropFirst(1).takeFirst(1).join("")
+  }
+
+  """
+  Patch version component, or null when the input is invalid.
+  """
+  patch(version: String!): String {
+    if (isValid(version) == false) {
+      return null
+    }
+    core(version).split(".").takeLast(1).join("")
+  }
+
+  """
+  Prerelease identifiers, or null for an invalid or stable version.
+  """
+  prerelease(version: String!): String {
+    if (isValid(version) == false) {
+      return null
+    }
+    let parts = normalized(version).split("+").takeFirst(1).join("").split("-")
+    if (parts.length > 1) { parts.dropFirst(1).join("-") } else { null }
+  }
+
+  """
+  Whether a valid version has a prerelease component.
+  """
+  isPrerelease(version: String!): Boolean! {
+    prerelease(version) != null
+  }
+
+  """
+  Build metadata, or null when absent or the input is invalid.
+  """
+  build(version: String!): String {
+    if (isValid(version) == false) {
+      return null
+    }
+    let parts = normalized(version).split("+")
+    if (parts.length > 1) { parts.dropFirst(1).join("+") } else { null }
+  }
+
+  """
+  Check SemVer validation and component extraction against representative cases.
+  """
+  testSemver: Void @check {
+    let validVersions = [
+      "0.0.0",
+      "1.2.3",
+      "v1.2.3",
+      "v2.4.1-rc.2+build.7",
+      "1.2.3-alpha-1",
+      "1.2.3+build.01",
+    ]
+    let invalidVersions = [
+      "v01.2.3",
+      "1.2.3-01",
+      "1.2",
+      "1.2.3-",
+      "1.2.3+build..7",
+      " 1.2.3",
+    ]
+
+    if (validVersions.any { version => isValid(version) == false }) {
+      raise "SemVer rejected a valid version"
+    }
+    if (invalidVersions.any { version => isValid(version) }) {
+      raise "SemVer accepted an invalid version"
+    }
+    if (major("v2.4.1-rc.2+build.7") != "2"
+      or minor("v2.4.1-rc.2+build.7") != "4"
+      or patch("v2.4.1-rc.2+build.7") != "1"
+      or prerelease("v2.4.1-rc.2+build.7") != "rc.2"
+      or build("v2.4.1-rc.2+build.7") != "build.7"
+      or isPrerelease("1.2.3+build.7")) {
+      raise "SemVer parsed version components incorrectly"
+    }
+    null
+  }
+}

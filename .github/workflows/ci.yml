@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      DAGGER_X_RELEASE: v1.0.0-beta.25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Dagger checks
+        uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: v1.0.0-beta.25
+          verb: check

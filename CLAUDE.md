@@ -80,12 +80,15 @@ gift-exchange/
 │   ├── static.go              ← go:embed web
 │   ├── handlers_test.go       ← 10 handler tests using httptest (all passing)
 │   └── web/                   ← embedded frontend assets (LocalStorage, URL link sharing)
-├── dagger.json                ← Dagger module root; declares "go" local dependency
-├── .dagger/                   ← COMPLETE — Dagger build pipeline (Dang SDK)
-│   ├── config.toml
-│   ├── main.dang              ← GiftExchange type: Test, Vet, Container, Serve, Publish (@check on Test/Vet)
-│   └── modules/go/
-│       └── main.dang          ← Go type: Build (trimpath, ldflags), Test (-race), Vet
+├── dagger.toml                ← Dagger v1 workspace: Go, lint, staticcheck, and local publish modules
+├── dagger.lock                ← Pins Dagger module dependencies
+├── .dagger/modules/
+│   ├── gift-exchange-build/   ← Builds CLI release binaries and server image binaries
+│   ├── gift-exchange-publish/ ← Publishes GHCR images and GitHub releases
+│   └── semver/                ← Validates and parses release tags
+├── .github/workflows/
+│   ├── ci.yml                 ← Dagger checks on pull requests and main
+│   └── release.yml            ← Publishes on v* tag pushes
 ├── plans/
 │   ├── README.md              ← high-level plan + phase status checklist
 │   ├── phase1-problem-exploration.md  ← COMPLETE
