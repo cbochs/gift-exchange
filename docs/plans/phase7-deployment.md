@@ -96,7 +96,7 @@ The `semver` module validates SemVer 2.0.0 tags (with an optional leading `v`) a
 
 The release workflow is triggered by every pushed tag matching `v*`. It selects Dagger's `ci` environment (`dagger --env ci`), which sets the registry, repository, and platform lists in `dagger.toml`; Dagger combines the registry and repository into `<registry>/<repository>:<tag>`. CI permissions provide `contents: write` and `packages: write`, and credentials are supplied as secrets.
 
-The Go runtime version is explicitly set to `1.27.2` for the Go, golangci-lint, and Staticcheck modules, so their project checks use `golang:1.27.2-alpine`. The upstream modules also have internal helper images (`golang:1.26-alpine`, `golang:1.27-alpine`, and a pinned golangci-lint tool image) that are not configurable through workspace settings. The release helper uses the latest Alpine image pinned as `alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a`.
+The Go runtime version is explicitly set to `1.27.3` for the Go, golangci-lint, and Staticcheck modules, so their project checks use `golang:1.27.3-alpine`. The upstream modules also have internal helper images (`golang:1.26-alpine`, `golang:1.27-alpine`, and a pinned golangci-lint tool image) that are not configurable through workspace settings. The release helper uses the latest Alpine image pinned as `alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a`.
 
 ---
 

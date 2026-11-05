@@ -3,7 +3,7 @@
 source = "dagger.io/go"
 
 [modules.go.settings]
-version = "1.27.2"
+version = "1.27.3"
 build = ["cmd/giftexchange", "cmd/server"]
 buildFlags = ["-trimpath", "-ldflags=-s -w"]
 
@@ -11,13 +11,13 @@ buildFlags = ["-trimpath", "-ldflags=-s -w"]
 source = "github.com/dagger/go/golangci-lint"
 
 [modules.golangci-lint.settings]
-goVersion = "1.27.2"
+goVersion = "1.27.3"
 
 [modules.staticcheck]
 source = "github.com/dagger/go/staticcheck"
 
 [modules.staticcheck.settings]
-goVersion = "1.27.2"
+goVersion = "1.27.3"
 
 # Dagger module development SDK
 [modules.dang-sdk]

@@ -18,10 +18,10 @@ jobs:
     env:
       DAGGER_X_RELEASE: v1.0.0-beta.25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Run Dagger checks
-        uses: dagger/dagger-for-github@v8.4.0
+        uses: dagger/dagger-for-github@v8.4.1
         with:
           version: v1.0.0-beta.25
           verb: check
@@ -35,10 +35,10 @@ jobs:
     env:
       DAGGER_X_RELEASE: v1.0.0-beta.25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Publish binaries, containers, and GitHub Release
-        uses: dagger/dagger-for-github@v8.4.0
+        uses: dagger/dagger-for-github@v8.4.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
