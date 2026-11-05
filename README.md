@@ -1,10 +1,11 @@
 # Gift Exchange
 
-A tool for creating optimized gift exchange assignments. Given a list of
-participants and optional blocked pairings (e.g. spouses, prior-year pairs), it
-finds valid assignments where everyone gives and receives exactly one gift
-— maximizing cycle length so participants are part of larger, more interesting
-exchange loops rather than simple back-and-forth pairs.
+A tool for creating gift exchanges where it doesn't stop until everyone has
+exchanged a gift. Given a list of participants and optional blocked pairings
+(e.g. spouses, prior-year pairs), it finds valid assignments where everyone
+gives and receives exactly one gift — maximizing cycle length so participants
+are part of larger, more interesting exchange loops rather than simple
+back-and-forth pairs.
 
 Multiple ranked solutions are returned so organizers can choose.
 
