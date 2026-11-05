@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: k3s-dagger
     env:
       DAGGER_X_RELEASE: v1.0.0-beta.25
     steps:
@@ -28,7 +28,7 @@ jobs:
 
   publish:
     needs: checks
-    runs-on: ubuntu-latest
+    runs-on: k3s-dagger
     permissions:
       contents: write
       packages: write
