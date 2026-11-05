@@ -77,17 +77,11 @@ type GiftExchangePublish {
       cliPlatforms: binaryPlatforms,
       serverPlatforms: imagePlatforms,
     )
+
     let sourceURL = "https://github.com/" + self.repository
+    let created = currentTimestamp
     let variants = imagePlatforms.map { platform =>
       container(platform: platform :: Platform!)
-        .withLabel("org.opencontainers.image.title", "Gift Exchange")
-        .withLabel("org.opencontainers.image.description", "Create gift exchanges where everyone participates!")
-        .withLabel("org.opencontainers.image.url", sourceURL)
-        .withLabel("org.opencontainers.image.documentation", sourceURL + "#readme")
-        .withLabel("org.opencontainers.image.source", sourceURL)
-        .withLabel("org.opencontainers.image.version", releaseTag)
-        .withLabel("org.opencontainers.image.revision", revision)
-        .withLabel("org.opencontainers.image.ref.name", releaseTag)
         .withFile(
           "/gift-exchange",
           binaries.file("gift-exchange-server-" + platforms.snakeCase(platform)),
@@ -98,6 +92,14 @@ type GiftExchangePublish {
 
     let imageRef = self.registry + "/" + self.repository + ":" + releaseTag
     let publishedImage = container
+      .withAnnotation("org.opencontainers.image.title", "Gift Exchange")
+      .withAnnotation("org.opencontainers.image.description", "A small tool and simple web UI for creating the perfect gift exchange.")
+      .withAnnotation("org.opencontainers.image.url", sourceURL)
+      .withAnnotation("org.opencontainers.image.documentation", sourceURL + "#readme")
+      .withAnnotation("org.opencontainers.image.source", sourceURL)
+      .withAnnotation("org.opencontainers.image.version", releaseTag)
+      .withAnnotation("org.opencontainers.image.revision", revision)
+      .withAnnotation("org.opencontainers.image.created", created)
       .withRegistryAuth(self.registry, username, token)
       .publish(imageRef, platformVariants: variants)
 
@@ -106,9 +108,11 @@ type GiftExchangePublish {
     } else {
       []
     }
+
     let releaseAssets = binaryPlatforms.map { platform =>
       "gift-exchange-" + platforms.snakeCase(platform)
     }
+
     let releaseURL = container
       .from("alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a")
       .withExec(["apk", "add", "--no-cache", "github-cli"])
