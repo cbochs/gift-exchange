@@ -60,49 +60,43 @@ if cfg.staticDir != "" {
 
 ---
 
-## 2. Dagger Build Pipeline
+## 2. Dagger Build and Release Pipeline
 
-**Location:** `.dagger/` (Dang SDK)
-
-```
-dagger.json                  ← module root; declares "go" local dependency
-.dagger/
-├── config.toml              ← module config (go = "modules/go")
-├── main.dang                ← GiftExchange type: Container, Serve, Publish
-└── modules/
-    └── go/
-        ├── dagger.json
-        └── main.dang        ← Go type: Build (cross-compile helper)
-```
-
-### 2.1 Go Module (`modules/go/main.dang`)
-
-Wraps `go build` with cross-compilation support. Uses a pinned `golang:1.26` image digest for reproducibility. Outputs a single static binary file.
+The repository uses Dagger v1 workspaces, pinned by `dagger.toml` and `dagger.lock`. CI runs with `DAGGER_X_RELEASE=v1.0.0-beta.25`.
 
 ```
-go.Build(source, pkg, platform) → File
+dagger.toml
+dagger.lock
+.dagger/modules/
+├── gift-exchange-build/      ← Builds CLI release binaries and server image binaries
+├── gift-exchange-publish/    ← Publishes GitHub releases and GHCR images
+└── semver/                   ← Validates and parses release tags
+.github/workflows/
+├── ci.yml                    ← Dagger checks on pull requests and main
+└── release.yml               ← Publishes for pushed v* tags
 ```
 
-### 2.2 GiftExchange Module (`.dagger/main.dang`)
+### 2.1 Binary build
 
-Three exported functions:
+The `gift-exchange-build` module calls `dagger/go` to build both `./cmd/giftexchange` and `./cmd/server`. Its `binaries` function accepts separate platform lists for the CLI and server, defaulting to:
 
-| Function                                           | Description                                                                                                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Container(platform)`                              | Builds the binary via `go.Build`, adds it to a bare container with exec permissions.                                                                 |
-| `Serve()`                                          | Wraps `Container` as a `Service` for local testing.                                                                                                  |
-| `Publish(tag, username, password, registry, repo)` | Builds `linux/amd64` and `linux/arm64` variants, publishes a multi-arch manifest to `registry/repo:tag`. Defaults to `ghcr.io/cbochs/gift-exchange`. |
+- `linux/amd64`
+- `linux/arm64`
+- `darwin/arm64` (macOS ARM64)
 
-### 2.3 Publishing
+The CLI defaults to Linux `amd64`, Linux `arm64`, and macOS ARM64; the server defaults to Linux `amd64` and `arm64`. The publish module passes its configured binary platforms to the CLI build and image platforms to the server build.
 
-```bash
-dagger call publish \
-  --tag v0.1.0 \
-  --username cbochs \
-  --password env:GITHUB_TOKEN
-```
+### 2.2 Release publishing
 
-This pushes a multi-arch image manifest to `ghcr.io/cbochs/gift-exchange:v0.1.0`.
+The `semver` module validates SemVer 2.0.0 tags (with an optional leading `v`) and extracts version components and prerelease/build metadata. `gift-exchange-publish` rejects non-SemVer tags before publishing, then accepts the tag, GitHub token, and GHCR username to:
+
+- Builds and publishes server images for the configured Linux platforms as `ghcr.io/cbochs/gift-exchange:<tag>`.
+- Creates a GitHub release for the same tag and attaches the CLI binaries for the configured binary platforms.
+- Marks SemVer tags containing a prerelease suffix (for example, `-beta.1`) as prereleases; this does not affect whether the pipeline runs.
+
+The release workflow is triggered by every pushed tag matching `v*`. It selects Dagger's `ci` environment (`dagger --env ci`), which sets the registry, repository, and platform lists in `dagger.toml`; Dagger combines the registry and repository into `<registry>/<repository>:<tag>`. CI permissions provide `contents: write` and `packages: write`, and credentials are supplied as secrets.
+
+The Go runtime version is explicitly set to `1.27.2` for the Go, golangci-lint, and Staticcheck modules, so their project checks use `golang:1.27.2-alpine`. The upstream modules also have internal helper images (`golang:1.26-alpine`, `golang:1.27-alpine`, and a pinned golangci-lint tool image) that are not configurable through workspace settings. The release helper uses the latest Alpine image pinned as `alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a`.
 
 ---
 
