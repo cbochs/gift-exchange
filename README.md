@@ -3,7 +3,7 @@
 [![CI](https://github.com/cbochs/gift-exchange/actions/workflows/ci.yml/badge.svg)](https://github.com/cbochs/gift-exchange/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/cbochs/gift-exchange)](https://github.com/cbochs/gift-exchange/releases)
 [![Written in Go](https://img.shields.io/badge/Go-1.27.3-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![GHCR](https://img.shields.io/badge/GHCR-cbochs%2Fgift--exchange-2496ED?logo=docker&logoColor=white)](https://github.com/cbochs/gift-exchange/pkgs/container/gift-exchange)
+[![GHCR](https://img.shields.io/badge/ghcr.io-cbochs%2Fgift--exchange-blue?logo=docker&logoColor=white)](https://github.com/cbochs/gift-exchange/pkgs/container/gift-exchange)
 
 A small tool and simple web UI for creating the perfect[^1] gift exchange.
 
