@@ -99,19 +99,19 @@ type Semver {
       " 1.2.3",
     ]
 
-    if (validVersions.any { version => isValid(version) == false }) {
-      raise "SemVer rejected a valid version"
+    assert(message: "SemVer rejected a valid version") {
+      validVersions.any { version => isValid(version) == false } == false
     }
-    if (invalidVersions.any { version => isValid(version) }) {
-      raise "SemVer accepted an invalid version"
+    assert(message: "SemVer accepted an invalid version") {
+      invalidVersions.any { version => isValid(version) } == false
     }
-    if (major("v2.4.1-rc.2+build.7") != "2"
-      or minor("v2.4.1-rc.2+build.7") != "4"
-      or patch("v2.4.1-rc.2+build.7") != "1"
-      or prerelease("v2.4.1-rc.2+build.7") != "rc.2"
-      or build("v2.4.1-rc.2+build.7") != "build.7"
-      or isPrerelease("1.2.3+build.7")) {
-      raise "SemVer parsed version components incorrectly"
+    assert(message: "SemVer parsed version components incorrectly") {
+      major("v2.4.1-rc.2+build.7") == "2"
+        and minor("v2.4.1-rc.2+build.7") == "4"
+        and patch("v2.4.1-rc.2+build.7") == "1"
+        and prerelease("v2.4.1-rc.2+build.7") == "rc.2"
+        and build("v2.4.1-rc.2+build.7") == "build.7"
+        and isPrerelease("1.2.3+build.7") == false
     }
     null
   }

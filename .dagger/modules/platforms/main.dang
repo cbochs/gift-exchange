@@ -65,21 +65,23 @@ type Platforms {
   Check parsing and normalization for supported release platforms.
   """
   testPlatforms: Void @check {
-    if (isValid("linux/amd64") == false or isValid("darwin/arm64") == false) {
-      raise "valid GOOS/GOARCH platforms were rejected"
+    assert(message: "valid GOOS/GOARCH platforms were rejected") {
+      isValid("linux/amd64") and isValid("darwin/arm64")
     }
-    if (isValid("linux/amd64/v8") or isValid("/amd64") or isValid("darwin/")) {
-      raise "invalid GOOS/GOARCH platform was accepted"
+    assert(message: "invalid GOOS/GOARCH platform was accepted") {
+      isValid("linux/amd64/v8") == false
+        and isValid("/amd64") == false
+        and isValid("darwin/") == false
     }
-    if (os("linux/amd64") != "linux" or arch("linux/amd64") != "amd64") {
-      raise "platform components were parsed incorrectly"
+    assert(message: "platform components were parsed incorrectly") {
+      os("linux/amd64") == "linux" and arch("linux/amd64") == "amd64"
     }
-    if (gnuArch("linux/amd64") != "x86_64"
-      or gnuArch("linux/arm64") != "aarch64"
-      or gnuTriplet("linux/amd64") != "x86_64-linux-gnu"
-      or gnuTriplet("darwin/arm64") != "aarch64-apple-darwin"
-      or snakeCase("darwin/arm64") != "darwin_arm64") {
-      raise "platform normalization failed"
+    assert(message: "platform normalization failed") {
+      gnuArch("linux/amd64") == "x86_64"
+        and gnuArch("linux/arm64") == "aarch64"
+        and gnuTriplet("linux/amd64") == "x86_64-linux-gnu"
+        and gnuTriplet("darwin/arm64") == "aarch64-apple-darwin"
+        and snakeCase("darwin/arm64") == "darwin_arm64"
     }
     null
   }
